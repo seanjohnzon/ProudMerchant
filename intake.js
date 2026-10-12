@@ -4,7 +4,10 @@ window.Intake = (function(){
   function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function val(state, s, f){ if (f.sameAs && state[s.id + '.' + f.id + '.same'] === '1') return (state[s.id + '.' + f.sameAs] || '').trim(); return (state[s.id + '.' + f.id] || '').trim(); }
   function filled(state, s, f){ var v = val(state, s, f); return f.want ? v === f.want : v !== ''; }
-  function shown(state, s, f){ return !f.when || (state[s.id + '.' + f.when[0]] || '') === f.when[1]; }
+  function shown(state, s, f){
+    if (f.when_any) return f.when_any[1].indexOf(state[s.id + '.' + f.when_any[0]] || '') >= 0;
+    return !f.when || (state[s.id + '.' + f.when[0]] || '') === f.when[1];
+  }
   function left(state, s){ return s.fields.filter(function(f){ return f.req && shown(state, s, f) && !filled(state, s, f); }).length; }
   function statusOf(tasks, state, s){
     var opt = !s.fields.some(function(f){ return f.req; });
