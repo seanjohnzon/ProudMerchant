@@ -57,6 +57,7 @@ window.Intake = (function(){
         if (f.note) wrap.appendChild(el('p', 'note', f.note));
         if (f.file){
           var have = el('p', 'have', state[key] ? '✓ We have it: ' + state[key] : ''); wrap.appendChild(have);
+          if (state[key + '.preview']){ var img = el('img', 'preview'); img.src = state[key + '.preview']; img.alt = state[key]; wrap.appendChild(img); }
           var pick = el('label', 'pick' + (state[key] ? ' small' : ''), state[key] ? 'Replace or add a file' : (f.multi ? 'Upload files' : 'Upload a file'));
           var inp = el('input'); inp.type = 'file'; inp.accept = f.accept || ''; if (f.multi) inp.multiple = true; inp.id = id; pick.htmlFor = id; pick.appendChild(inp);
           inp.addEventListener('change', function(){
