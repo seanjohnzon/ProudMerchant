@@ -5,16 +5,11 @@ window.PM = window.PM || (function(){
   var KEY = 'sb_publishable_3frQgbkFaZt7nCgVhHqdbQ_IwDF7jQd';
   var sb = window.supabase.createClient(URL, KEY);
   function fail(e){ throw new Error((e && e.message) || 'Something went wrong.'); }
-  // SIT test door: account.html?t=<business code> opens that list with no login. Works only
-  // while the database allows it (it does in SIT, not in UAT).
-  var test = new URLSearchParams(location.search).get('t');
-  try { if (test) sessionStorage.setItem('pm-test', test); else test = sessionStorage.getItem('pm-test'); } catch(e){}
   return {
-    testCode: test || null,
     rpc: function(name, body){ return sb.rpc(name, body || {}).then(function(r){ if (r.error) fail(r.error); return r.data; }); },
     session: function(){ return sb.auth.getSession().then(function(r){ return r.data.session; }); },
-    sendCode: function(email){ return sb.auth.signInWithOtp({ email: email }).then(function(r){ if (r.error) fail(r.error); }); },
-    checkCode: function(email, code){ return sb.auth.verifyOtp({ email: email, token: code, type: 'email' }).then(function(r){ if (r.error) fail(r.error); return r.data.session; }); },
+    signIn: function(email, password){ return sb.auth.signInWithPassword({ email: email, password: password }).then(function(r){ if (r.error) fail(r.error); return r.data.session; }); },
+    signUp: function(email, password, name){ return sb.auth.signUp({ email: email, password: password, options: { data: { name: name } } }).then(function(r){ if (r.error) fail(r.error); if (!r.data.session) throw new Error('The account was made but could not be opened. Log in with your email and password.'); return r.data.session; }); },
     signOut: function(){ return sb.auth.signOut(); }
   };
 })();

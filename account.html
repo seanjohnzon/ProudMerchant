@@ -81,14 +81,6 @@
 <script>
 (function(){
   var saving = document.getElementById('saving'), empty = document.getElementById('empty');
-  if (PM.testCode){
-    document.getElementById('who').textContent = 'Test list';
-    PM.rpc('get_account', { p_code: PM.testCode }).then(function(acct){
-      if (!acct){ empty.hidden = false; empty.textContent = 'This test link is not one of ours.'; return; }
-      build(acct, PM.testCode);
-    }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
-    return;
-  }
   PM.session().then(function(s){
     if (!s){ location.replace('login.html'); return; }
     document.getElementById('who').textContent = s.user.email;
@@ -101,7 +93,7 @@
     });
   }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
 
-  function build(acct, testCode){
+  function build(acct){
     var SHEET = acct.template, state = acct.answers || {}, tasks = acct.tasks || {};
     document.title = acct.name + ' · Proud Merchant';
     document.getElementById('title').textContent = acct.name;
@@ -117,7 +109,7 @@
       clearTimeout(timers[key]);
       timers[key] = setTimeout(function(){
         saving.className = 'saving'; saving.textContent = 'Saving…';
-        PM.rpc('save_answer', testCode ? { p_code: testCode, p_key: key, p_value: state[key] || '' } : { p_key: key, p_value: state[key] || '' }).then(function(t){
+        PM.rpc('save_answer', { p_key: key, p_value: state[key] || '' }).then(function(t){
           tasks = t || tasks; saving.textContent = 'Saved.'; paint();
           setTimeout(function(){ if (saving.textContent === 'Saved.') saving.textContent = ''; }, 1500);
         }).catch(function(err){ saving.className = 'saving err'; saving.textContent = 'Not saved: ' + err.message + ' Check your connection and type again.'; });
