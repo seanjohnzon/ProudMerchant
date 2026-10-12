@@ -111,7 +111,7 @@
     <form class="demo" id="startForm" novalidate>
       <div class="f"><span class="lab">Kind of business</span>
         <div class="choice" role="group" aria-label="Kind of business" id="kind">
-          <button type="button" data-v="food-truck-v6" aria-pressed="true">Food truck</button>
+          <button type="button" data-v="food-truck-v7" aria-pressed="true">Food truck</button>
           <button type="button" data-v="restaurant-v2" aria-pressed="false">Restaurant</button>
           <button type="button" data-v="gas-station-v2" aria-pressed="false">Gas station</button>
           <button type="button" data-v="other-v2" aria-pressed="false">Something else</button>
@@ -140,7 +140,7 @@
 <script>
 (function(){
   PM.session().then(function(s){ if (s){ var n = document.getElementById('navLogin'); n.textContent = 'Your list'; n.href = 'account.html'; } });
-  var kind = "food-truck-v6";
+  var kind = "food-truck-v7";
   document.querySelectorAll('#kind button').forEach(function(b){ b.addEventListener('click', function(){ kind = b.dataset.v; document.querySelectorAll('#kind button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var form = document.getElementById('startForm'), msg = document.getElementById('msg'), go = document.getElementById('go');
   form.addEventListener('submit', function(e){
