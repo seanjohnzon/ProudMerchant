@@ -1,0 +1,11 @@
+# proudmerchant.com: plain files, no build. Connect this repo on Netlify and deploy.
+# The database it talks to is the company project "proud-merchant" on Supabase,
+# through its publishable key (made to be seen); nothing secret is in these pages.
+[build]
+  publish = "."
+  command = ""
+
+[[headers]]
+  for = "/account.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
