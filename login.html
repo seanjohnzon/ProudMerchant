@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Log in · Proud Merchant</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<link rel="stylesheet" href="pm.css">
+<style>
+  .box{max-width:420px;margin:40px auto 0;display:grid;gap:16px}
+  .box h1{font-size:34px}
+  .code input{font-size:28px;letter-spacing:.3em;text-align:center;font-variant-numeric:tabular-nums}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .linkish{background:none;border:0;padding:0;font:inherit;color:var(--ink2);text-decoration:underline;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="./"><i></i>Proud Merchant</a>
+    <nav class="links" aria-label="Site"><a href="pricing.html">Pricing</a><a class="cta" href="./#demo">Get a free demo</a></nav>
+  </header>
+
+  <div class="box">
+    <form id="step1" novalidate>
+      <h1>Log in</h1>
+      <p class="sub">Your email, then the code we send to it. No password.</p>
+      <div class="f"><label for="email">Email</label><input id="email" type="email" autocomplete="email" inputmode="email" required></div>
+      <div style="margin-top:14px"><button class="btn brass" type="submit" id="send">Send me a code</button></div>
+      <p class="msg" id="msg1"></p>
+    </form>
+
+    <form id="step2" novalidate hidden>
+      <h1>Check your email</h1>
+      <p class="sub">We sent a 6-digit code to <b id="to"></b>. It works for a few minutes.</p>
+      <div class="f code"><label for="code">Code</label><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required></div>
+      <div class="row" style="margin-top:14px"><button class="btn brass" type="submit" id="check">Log in</button><button class="linkish" type="button" id="again">Send it again</button></div>
+      <p class="msg" id="msg2"></p>
+      <p class="aside">If the email has a link instead of a code, tap the link. It logs you in the same way.</p>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script src="pm.js"></script>
+<script>
+(function(){
+  var s1 = document.getElementById('step1'), s2 = document.getElementById('step2');
+  var m1 = document.getElementById('msg1'), m2 = document.getElementById('msg2'), email = '';
+  PM.session().then(function(s){ if (s) location.replace('account.html'); });
+  function send(){
+    m1.className = 'msg'; m1.textContent = 'Sending…'; document.getElementById('send').disabled = true;
+    return PM.sendCode(email).then(function(){
+      document.getElementById('to').textContent = email; s1.hidden = true; s2.hidden = false; m1.textContent = ''; document.getElementById('send').disabled = false;
+      document.getElementById('code').focus();
+    }).catch(function(err){ document.getElementById('send').disabled = false; m1.className = 'msg err'; m1.textContent = err.message; });
+  }
+  s1.addEventListener('submit', function(e){
+    e.preventDefault(); email = s1.email.value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m1.className = 'msg err'; m1.textContent = 'That email does not look right.'; return; }
+    send();
+  });
+  document.getElementById('again').addEventListener('click', function(){ m2.className = 'msg'; m2.textContent = 'Sending again…'; PM.sendCode(email).then(function(){ m2.textContent = 'Sent. Check your email again.'; }).catch(function(err){ m2.className = 'msg err'; m2.textContent = err.message; }); });
+  s2.addEventListener('submit', function(e){
+    e.preventDefault(); var code = s2.code.value.replace(/\D/g, '');
+    if (code.length !== 6){ m2.className = 'msg err'; m2.textContent = 'The code is 6 digits.'; return; }
+    m2.className = 'msg'; m2.textContent = 'Checking…'; document.getElementById('check').disabled = true;
+    PM.checkCode(email, code).then(function(){ location.replace('account.html'); })
+      .catch(function(err){ document.getElementById('check').disabled = false; m2.className = 'msg err'; m2.textContent = /expired|invalid/i.test(err.message) ? 'That code is wrong or has expired. Send it again and try the new one.' : err.message; });
+  });
+})();
+</script>
+</body>
+</html>
