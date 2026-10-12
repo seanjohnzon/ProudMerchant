@@ -20,7 +20,7 @@ The database is the Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjq
 `get_account`, `save_answer`; `team_overview` and `job_done` answer only for team emails. Nothing is
 open to a visitor who has not checked his email.
 
-Templates: `food-truck-v8-d` (Serdar's), `restaurant-v2-d`, `gas-station-v2-d`, `other-v2-d`: the current ones; the Start page names them. Older rows stay for reference.
+Templates: `food-truck-v8-p` (Serdar's), `restaurant-v2-p`, `gas-station-v2-p`, `other-v2-p`: the current ones; the Start page names them. Older rows stay for reference.
 list with its place section reworded; change them in the `templates` table as the first restaurant or
 station teaches us something.
 
