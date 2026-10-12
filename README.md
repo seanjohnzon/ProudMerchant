@@ -20,7 +20,7 @@ The database is the Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjq
 `get_account`, `save_answer`; `team_overview` and `job_done` answer only for team emails. Nothing is
 open to a visitor who has not checked his email.
 
-Templates: `food-truck-v7` (Serdar's; stamp card, plus a box for anything else in their own words), `restaurant-v2`, `gas-station-v2`, `other-v2` (stamp card, points, or described in their own words). Six steps: 1 build your app = name, logo, menu + socials and rewards optional → build job; 2 check your menu after we mark Built; 3 about the business, optional; 4 legal name, web address, D-U-N-S, Apple, Google; 5 Square; 6 launch. Older flat templates stay for reference.
+Templates: `food-truck-v8` (Serdar's; stamp card, plus a box for anything else in their own words), `restaurant-v2`, `gas-station-v2`, `other-v2` (stamp card, points, or described in their own words). Six steps: 1 build your app = name, logo, menu + socials and rewards optional → build job; 2 check your menu after we mark Built; 3 about the business, optional; 4 legal name, web address, D-U-N-S, Apple, Google; 5 Square; 6 launch. Older flat templates stay for reference.
 list with its place section reworded; change them in the `templates` table as the first restaurant or
 station teaches us something.
 
