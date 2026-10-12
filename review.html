@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Check your menu · Proud Merchant</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
+<link rel="stylesheet" href="pm.css">
+<link rel="stylesheet" href="intake.css">
+<style>
+  /* The menu as we built it, item by item. Looks right, or a note. */
+  body{font-size:16px;line-height:1.45;padding-block:0 60px}
+  .narrow{display:grid;gap:14px}
+  header.bar{padding-block:14px}
+  .crumb{color:var(--ink2);font-size:14.5px;text-decoration:none}
+  h1{font-size:clamp(28px,7vw,40px);margin:0}
+  .item{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:12px 14px;display:grid;gap:8px}
+  .item.ok{border-left-color:var(--done)}
+  .item b{font-size:17px} .item .d{color:var(--ink2);font-size:14.5px;margin:0}
+  .item textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;min-height:44px;resize:vertical}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .okb{font:inherit;font-size:15px;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+  .okb[aria-pressed="true"]{background:var(--done);border-color:var(--done);color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+<div class="narrow">
+  <header class="bar">
+    <a class="brand" href="./"><i></i>Proud Merchant</a>
+    <nav class="links" aria-label="Account"><a class="crumb" href="account.html">← Your setup</a></nav>
+  </header>
+  <div class="top"><h1>Check your menu</h1><span class="progress" id="progress"></span></div>
+  <p class="hint" style="margin:0" id="hint">Open your test app, order each item as a customer would, and tick it here. Anything wrong: write it under the item and we fix it.</p>
+  <p class="saving" id="saving"></p>
+  <div class="empty" id="empty" hidden></div>
+  <div id="items" style="display:grid;gap:10px"></div>
+  <div class="row" style="margin-top:8px"><a class="crumb" href="account.html">Back to your setup</a></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script src="pm.js"></script>
+<script src="intake.js"></script>
+<script>
+(function(){
+  var saving = document.getElementById('saving'), empty = document.getElementById('empty'), el = Intake.el;
+  PM.session().then(function(s){
+    if (!s){ location.replace('login.html'); return; }
+    return PM.rpc('get_account').then(function(acct){
+      if (!acct){ location.replace('account.html'); return; }
+      var items = acct.review || [];
+      if (!items.length){ empty.hidden = false; empty.textContent = 'Not yet. We are building your app; you get an email when it is ready to check.'; return; }
+      var host = document.getElementById('items'), timers = {};
+      function paint(){ var ok = items.filter(function(i){ return i.ok; }).length; document.getElementById('progress').textContent = ok + ' of ' + items.length + ' look right'; }
+      items.forEach(function(it){
+        var card = el('div', 'item' + (it.ok ? ' ok' : '')); card.appendChild(el('b', '', it.name)); if (it.detail) card.appendChild(el('p', 'd', it.detail));
+        var row = el('div', 'row'); var okb = el('button', 'okb', 'Looks right'); okb.type = 'button'; okb.setAttribute('aria-pressed', String(!!it.ok)); row.appendChild(okb); card.appendChild(row);
+        var ta = el('textarea'); ta.placeholder = 'Anything wrong? Write it here.'; ta.value = it.note || ''; card.appendChild(ta);
+        function save(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(function(){
+          saving.className = 'saving'; saving.textContent = 'Saving…';
+          PM.rpc('save_review', { p_item: it.item_id, p_ok: it.ok, p_note: ta.value }).then(function(){ saving.textContent = 'Saved.'; setTimeout(function(){ if (saving.textContent === 'Saved.') saving.textContent = ''; }, 1500); })
+            .catch(function(err){ saving.className = 'saving err'; saving.textContent = 'Not saved: ' + err.message; });
+        }, 500); }
+        okb.addEventListener('click', function(){ it.ok = !it.ok; okb.setAttribute('aria-pressed', String(it.ok)); card.classList.toggle('ok', it.ok); paint(); save(); });
+        ta.addEventListener('input', function(){ it.note = ta.value; save(); });
+        host.appendChild(card);
+      });
+      paint();
+    });
+  }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+/* The intake pages: section cards with named boxes, chips, uploads. */
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.progress{font-weight:600;font-size:15px;color:var(--done);font-variant-numeric:tabular-nums}
+.saving{font-size:13.5px;color:var(--ink3);min-height:1.2em;margin:0}
+.saving.err{color:var(--todo)}
+.chip{font-weight:600;font-size:12px;border-radius:999px;padding:2px 10px;white-space:nowrap;background:var(--tint);color:var(--todo);letter-spacing:.02em}
+.chip.ok{background:var(--done);color:#fff}
+.chip.wait{background:var(--brass);color:#fff}
+.chip.lock{color:var(--ink3)}
+.sec{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:14px 15px;display:grid;gap:12px;scroll-margin-top:12px}
+.sec.ok{border-left-color:var(--done)}
+.sec.wait{border-left-color:var(--brass)}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sec h2{font-size:21px;letter-spacing:-.01em;margin:0}
+.hint{color:var(--ink2);font-size:14.5px;margin:-6px 0 0}
+.go{justify-self:start;background:var(--ink);color:var(--paper);font-weight:600;font-size:14px;padding:7px 13px;border-radius:7px;text-decoration:none}
+.f-label{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-weight:600;font-size:15px}
+.same{display:inline-flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;justify-self:start}
+.same input{width:22px;height:22px;margin:0;accent-color:var(--done)}
+.note{margin:0;color:var(--ink2);font-size:14px}
+.have{margin:0;color:var(--done);font-size:14px;font-weight:600}
+.have:empty{display:none}
+.pick{justify-self:start;background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px 13px;font-size:15px;cursor:pointer;font-weight:600}
+.pick input{position:absolute;width:1px;height:1px;opacity:0}
+.tag{font-weight:600;font-size:11px;padding:1px 7px;border-radius:4px;background:var(--tint);color:var(--ink3);letter-spacing:.02em}
+.tag.req{background:var(--todo);color:#fff}
+.f.filled .tag.req{background:var(--done)}
+.f input[type=text],.f textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%}
+.f textarea{min-height:70px;resize:vertical}
+.choice button{font-size:15px;background:var(--paper);padding:6px 14px}
+.choice button[aria-pressed="true"]{background:var(--done);border-color:var(--done);color:#fff}
+.linkish{background:none;border:0;padding:0;font:inherit;font-size:15.5px;color:var(--ink2);text-decoration:underline;cursor:pointer}
+.empty{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 16px}

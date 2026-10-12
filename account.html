@@ -3,57 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Your list · Proud Merchant</title>
+<title>Your setup · Proud Merchant</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
 <link rel="stylesheet" href="pm.css">
+<link rel="stylesheet" href="intake.css">
 <style>
-  /* The customer's list: a checklist of sections at the top, then one card per section with named boxes
-     marked required or optional. Every box saves to our database as he types. Same shape as the sheet he approved. */
+  /* The profile: how far along he is, six steps, one Continue button. */
   body{font-size:16px;line-height:1.45;padding-block:0 60px}
   .narrow{display:grid;gap:14px}
   header.bar{padding-block:14px}
-  .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
   h1{font-size:clamp(32px,8vw,46px);margin:6px 0 0}
-  .progress{font-weight:600;font-size:15px;color:var(--done);font-variant-numeric:tabular-nums}
-  .mailto{font-size:14.5px;color:var(--ink2);margin:0}
-  .email{font-weight:600;color:var(--ink);word-break:break-all}
-  .saving{font-size:13.5px;color:var(--ink3);min-height:1.2em;margin:0}
-  .saving.err{color:var(--todo)}
-
-  .list{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 13px;display:grid}
-  .list a{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);font-weight:600}
-  .list a:last-child{border-bottom:0}
-  .chip{font-weight:600;font-size:12px;border-radius:999px;padding:2px 10px;white-space:nowrap;background:var(--tint);color:var(--todo);letter-spacing:.02em}
-  .chip.ok{background:var(--done);color:#fff}
-  .chip.wait{background:var(--brass);color:#fff}
-
-  .sec{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:14px 15px;display:grid;gap:12px;scroll-margin-top:12px}
-  .sec.ok{border-left-color:var(--done)}
-  .sec.wait{border-left-color:var(--brass)}
-  .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
-  .sec h2{font-size:21px;letter-spacing:-.01em;margin:0}
-  .hint{color:var(--ink2);font-size:14.5px;margin:-6px 0 0}
-  .go{justify-self:start;background:var(--ink);color:var(--paper);font-weight:600;font-size:14px;padding:7px 13px;border-radius:7px;text-decoration:none}
-
-  .f-label{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-weight:600;font-size:15px}
-  .same{display:inline-flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;justify-self:start}
-  .same input{width:22px;height:22px;margin:0;accent-color:var(--done)}
-  .note{margin:0;color:var(--ink2);font-size:14px}
-  .tag{font-weight:600;font-size:11px;padding:1px 7px;border-radius:4px;background:var(--tint);color:var(--ink3);letter-spacing:.02em}
-  .tag.req{background:var(--todo);color:#fff}
-  .f.filled .tag.req{background:var(--done)}
-  .f input[type=text],.f textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%}
-  .f textarea{min-height:70px;resize:vertical}
-  .choice button{font-size:15px;background:var(--paper);padding:6px 14px}
-  .choice button[aria-pressed="true"]{background:var(--done);border-color:var(--done);color:#fff}
-
-  h3{font-weight:800;font-size:17px;margin:10px 0 0;color:var(--ink2)}
-  table{font-size:15px}
-  td{padding:8px 12px 8px 0}
-  td span{font-size:13px;display:inline}
-  .empty{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 16px}
-  .linkish{background:none;border:0;padding:0;font:inherit;font-size:15.5px;color:var(--ink2);text-decoration:underline;cursor:pointer}
+  .bar2{height:10px;background:var(--tint);border-radius:999px;overflow:hidden}
+  .bar2 i{display:block;height:100%;background:var(--done);transition:width .4s}
+  .steps{display:grid;gap:10px}
+  .step{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink)}
+  .step.ok{border-left-color:var(--done)} .step.wait{border-left-color:var(--brass)} .step.lock{border-left-color:var(--line);color:var(--ink3)}
+  .step .n{font-weight:800;font-size:22px;color:var(--brass);font-variant-numeric:tabular-nums}
+  .step.lock .n{color:var(--ink3)}
+  .step b{display:block;font-size:17px}
+  .step small{display:block;color:var(--ink2);font-size:13.5px}
+  .step.lock small{color:var(--ink3)}
+  .cont{margin-top:4px}
+  h3{font-weight:800;font-size:17px;margin:14px 0 0;color:var(--ink2)}
+  table{font-size:15px} td{padding:8px 12px 8px 0} td span{font-size:13px;display:inline}
 </style>
 </head>
 <body>
@@ -62,14 +35,12 @@
     <a class="brand" href="./"><i></i>Proud Merchant</a>
     <nav class="links" aria-label="Account"><span id="who" style="color:var(--ink3);font-size:14px"></span><a id="teamLink" href="team.html" hidden>Team</a><button class="linkish" id="out" hidden>Log out</button></nav>
   </header>
-  <div class="top"><h1 id="title">Your list</h1><span class="progress" id="progress"></span></div>
-  <p class="mailto" id="intro" hidden>Invites go to <span class="email">cihanshah.sahin@gmail.com</span>. Never send a password or a Square code.</p>
+  <div class="top"><h1 id="title">Your setup</h1><span class="progress" id="progress"></span></div>
+  <div class="bar2" id="bar" hidden><i id="fill" style="width:0"></i></div>
   <p class="saving" id="saving"></p>
-
   <div class="empty" id="empty" hidden></div>
-  <nav class="list" id="list" aria-label="Sections"></nav>
-  <div id="sections" style="display:grid;gap:14px"></div>
-
+  <div class="steps" id="steps"></div>
+  <div class="cont" id="cont"></div>
   <div id="costWrap" hidden>
     <h3>What it costs you</h3>
     <div class="scroll"><table><tbody id="costs"></tbody></table></div>
@@ -78,9 +49,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
 <script src="pm.js"></script>
+<script src="intake.js"></script>
 <script>
 (function(){
-  var saving = document.getElementById('saving'), empty = document.getElementById('empty');
+  var saving = document.getElementById('saving'), empty = document.getElementById('empty'), el = Intake.el;
   PM.session().then(function(s){
     if (!s){ location.replace('login.html'); return; }
     document.getElementById('who').textContent = s.user.email;
@@ -88,103 +60,41 @@
     out.addEventListener('click', function(){ PM.signOut().then(function(){ location.replace('login.html'); }); });
     PM.rpc('team_overview').then(function(o){ if (o) document.getElementById('teamLink').hidden = false; }).catch(function(){});
     return PM.rpc('get_account').then(function(acct){
-      if (!acct){ empty.hidden = false; empty.innerHTML = 'You are logged in as <b></b>, but there is no business on it yet. <a href="./#start">Start one</a>, it takes two minutes.'; empty.querySelector('b').textContent = s.user.email; return; }
+      if (!acct){ empty.hidden = false; empty.innerHTML = 'You are logged in as <b></b>, but there is no business on it yet. <a href="./#start">Start one</a>, it takes a minute.'; empty.querySelector('b').textContent = s.user.email; return; }
       build(acct);
     });
   }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
 
   function build(acct){
-    var SHEET = acct.template, state = acct.answers || {}, tasks = acct.tasks || {};
     document.title = acct.name + ' · Proud Merchant';
     document.getElementById('title').textContent = acct.name;
-    document.getElementById('intro').hidden = false;
+    var steps = acct.template.steps || [], host = document.getElementById('steps'), first = null, doneSteps = 0;
+    steps.forEach(function(st, i){
+      var x = Intake.stepState(acct, st);
+      var a = el('a', 'step ' + (x.status === 'done' ? 'ok' : x.status === 'pending' ? 'wait' : x.status === 'locked' ? 'lock' : ''));
+      a.href = st.review ? 'review.html' : 'step.html?s=' + st.id;
+      if (x.status === 'locked'){ a.removeAttribute('href'); }
+      a.appendChild(el('span', 'n', String(i + 1)));
+      var mid = el('div'); mid.appendChild(el('b', '', st.title));
+      mid.appendChild(el('small', '', x.status === 'locked' ? (acct.stage === 'building' ? 'We are building. You get an email when it is ready.' : 'Opens after we build your app.') : (st.hint || '')));
+      a.appendChild(mid);
+      var chip = el('span', 'chip' + (x.status === 'done' ? ' ok' : x.status === 'pending' ? ' wait' : x.status === 'locked' ? ' lock' : ''),
+        x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.status === 'locked' ? 'Not yet' : (st.review ? x.left + ' to check' : x.left + ' left'));
+      a.appendChild(chip); host.appendChild(a);
+      if (x.status === 'done') doneSteps++;
+      if (!first && (x.status === 'todo' || x.status === 'pending')) first = { href: a.href || null, title: st.title, i: i + 1 };
+    });
+    document.getElementById('progress').textContent = doneSteps + ' of ' + steps.length + ' done';
+    document.getElementById('bar').hidden = false; document.getElementById('fill').style.width = Math.round(100 * doneSteps / Math.max(steps.length, 1)) + '%';
+    var cont = document.getElementById('cont');
+    if (first && first.href){ var b = el('a', 'btn brass', 'Continue: ' + first.i + '. ' + first.title); b.href = first.href; cont.appendChild(b); }
+    else if (doneSteps === steps.length) cont.appendChild(el('p', 'sub', 'Everything is done. We take it from here.'));
     document.getElementById('costWrap').hidden = false;
-    (SHEET.costs || []).forEach(function(c){
+    (acct.template.costs || []).forEach(function(c){
       var tr = el('tr'), td = el('td', '', c[0] + ' '); td.appendChild(el('span', '', '· ' + c[1]));
       tr.appendChild(td); tr.appendChild(el('td', 'r', c[2])); document.getElementById('costs').appendChild(tr);
     });
-
-    var timers = {};
-    function save(key){
-      clearTimeout(timers[key]);
-      timers[key] = setTimeout(function(){
-        saving.className = 'saving'; saving.textContent = 'Saving…';
-        PM.rpc('save_answer', { p_key: key, p_value: state[key] || '' }).then(function(t){
-          tasks = t || tasks; saving.textContent = 'Saved.'; paint();
-          setTimeout(function(){ if (saving.textContent === 'Saved.') saving.textContent = ''; }, 1500);
-        }).catch(function(err){ saving.className = 'saving err'; saving.textContent = 'Not saved: ' + err.message + ' Check your connection and type again.'; });
-      }, 500);
-    }
-    function val(s, f){ if (f.sameAs && state[s.id + '.' + f.id + '.same'] === '1') return (state[s.id + '.' + f.sameAs] || '').trim(); return (state[s.id + '.' + f.id] || '').trim(); }
-    function filled(s, f){ var v = val(s, f); return f.want ? v === f.want : v !== ''; }
-    function shown(s, f){ return !f.when || (state[s.id + '.' + f.when[0]] || '') === f.when[1]; }
-    function left(s){ return s.fields.filter(function(f){ return f.req && shown(s, f) && !filled(s, f); }).length; }
-
-    var list = document.getElementById('list'), host = document.getElementById('sections'), progress = document.getElementById('progress');
-    var chips = {};
-    function paint(){
-      var done = 0, total = 0;
-      SHEET.sections.forEach(function(s){
-        var opt = !s.fields.some(function(f){ return f.req; });
-        var st = tasks[s.id];                       // the database's word; the page agrees with it
-        var n = left(s), ok = opt ? s.fields.some(function(f){ return filled(s, f); }) : (st ? st === 'done' : n === 0);
-        if (!opt){ total++; if (ok) done++; }
-        var wait = !ok && (st === 'pending' || (s.pending && (state[s.id + '.' + s.pending[0]] || '') === s.pending[1]));
-        chips[s.id].forEach(function(c){ c.textContent = opt ? (ok ? 'Added' : 'Optional') : (ok ? 'Done' : wait ? 'Pending' : n + ' left'); c.classList.toggle('ok', ok); c.classList.toggle('wait', !!wait); });
-        document.getElementById('sec-' + s.id).classList.toggle('wait', !!wait);
-        document.getElementById('sec-' + s.id).classList.toggle('ok', ok);
-        s.fields.forEach(function(f){ var w = document.getElementById('f-' + s.id + '-' + f.id); w.classList.toggle('filled', filled(s, f)); w.hidden = !shown(s, f); });
-      });
-      progress.textContent = done + ' of ' + total + ' done';
-    }
-
-    SHEET.sections.forEach(function(s){
-      var a = el('a', '', s.title); a.href = '#sec-' + s.id; var c1 = el('span', 'chip'); a.appendChild(c1); list.appendChild(a);
-      var sec = el('section', 'sec'); sec.id = 'sec-' + s.id;
-      var head = el('div', 'sec-head'); head.appendChild(el('h2', '', s.title)); var c2 = el('span', 'chip'); head.appendChild(c2); sec.appendChild(head);
-      chips[s.id] = [c1, c2];
-      if (s.hint) sec.appendChild(el('p', 'hint', s.hint));
-      if (s.url){ var g = el('a', 'go', s.go || 'Open'); g.href = s.url; g.target = '_blank'; g.rel = 'noopener'; sec.appendChild(g); }
-      s.fields.forEach(function(f){
-        var key = s.id + '.' + f.id, id = 'in-' + s.id + '-' + f.id;
-        var wrap = el('div', 'f'); wrap.id = 'f-' + s.id + '-' + f.id;
-        var lab = el(f.choice ? 'div' : 'label', 'f-label', f.label); if (!f.choice) lab.htmlFor = id;
-        lab.appendChild(el('span', 'tag' + (f.req ? ' req' : ''), f.req ? 'Required' : 'Optional'));
-        wrap.appendChild(lab);
-        if (f.url){ var fg = el('a', 'go', f.go || 'Open'); fg.href = f.url; fg.target = '_blank'; fg.rel = 'noopener'; wrap.appendChild(fg); }
-        if (f.note) wrap.appendChild(el('p', 'note', f.note));
-        if (f.choice){
-          var ch = el('div', 'choice'); ch.setAttribute('role', 'group'); ch.setAttribute('aria-label', f.label);
-          f.choice.forEach(function(c){
-            var b = el('button', '', c); b.type = 'button'; b.setAttribute('aria-pressed', String(state[key] === c));
-            b.addEventListener('click', function(){
-              state[key] = (state[key] === c) ? '' : c; save(key);
-              ch.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', String(x.textContent === state[key])); });
-              paint();
-            });
-            ch.appendChild(b);
-          });
-          wrap.appendChild(ch);
-        } else {
-          var inp = el(f.area ? 'textarea' : 'input'); if (!f.area) inp.type = 'text';
-          inp.id = id; inp.placeholder = f.ph || ''; inp.value = state[key] || '';
-          inp.addEventListener('input', function(){ state[key] = inp.value; save(key); paint(); });
-          if (f.sameAs){
-            var sl = el('label', 'same'), sc = el('input'); sc.type = 'checkbox'; sc.id = id + '-same'; sc.checked = state[key + '.same'] === '1';
-            sl.appendChild(sc); sl.appendChild(document.createTextNode(f.sameLabel || 'Same as above'));
-            inp.hidden = sc.checked;
-            sc.addEventListener('change', function(){ state[key + '.same'] = sc.checked ? '1' : ''; inp.hidden = sc.checked; save(key + '.same'); paint(); });
-            wrap.appendChild(sl);
-          }
-          wrap.appendChild(inp);
-        }
-        sec.appendChild(wrap);
-      });
-      host.appendChild(sec);
-    });
-    paint();
   }
-  function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 })();
 </script>
 </body>

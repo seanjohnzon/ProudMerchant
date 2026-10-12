@@ -24,6 +24,12 @@
   .events{font-size:14.5px;color:var(--ink2);display:grid;gap:4px}
   .events b{color:var(--ink)}
   .linkish{background:none;border:0;padding:0;font:inherit;font-size:15.5px;color:var(--ink2);text-decoration:underline;cursor:pointer}
+  .files{display:flex;gap:8px;flex-wrap:wrap;font-size:14px}
+  .files a{color:var(--ink);background:var(--tint);border-radius:6px;padding:3px 8px;text-decoration:none}
+  .built{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+  .built textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px;width:100%;min-height:90px}
+  .built button{font:inherit;font-size:14px;background:var(--done);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer;justify-self:start}
+  .stage{font-weight:600;color:var(--brass)}
   h1{font-size:34px;margin:10px 0 4px}
 </style>
 </head>
@@ -68,6 +74,21 @@
         head.appendChild(el('span', 'meta', b.done + ' of ' + b.total + ' done' + (b.pending ? ', ' + b.pending + ' pending' : ''))); card.appendChild(head);
         var bar = el('div', 'prog'); var fill = el('i'); fill.style.width = (b.total ? Math.round(100 * b.done / b.total) : 0) + '%'; bar.appendChild(fill); card.appendChild(bar);
         card.appendChild(el('p', 'meta', [b.kind, b.contact, b.phone, b.email, 'started ' + when(b.started), b.last_answer ? 'last answer ' + when(b.last_answer) : ''].filter(Boolean).join(' · ')));
+        var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', { setup: 'Filling in', building: 'Waiting on us to build', review: 'He is checking the menu', approved: 'Menu approved', live: 'Live' }[b.stage] || b.stage)); card.appendChild(stage);
+        var files = el('div', 'files'); card.appendChild(files);
+        PM.listFiles(b.id).then(function(folders){ (folders || []).forEach(function(fo){ PM.listFiles(b.id + '/' + fo.name).then(function(fs){ (fs || []).forEach(function(f){
+          var a = el('a', '', fo.name.replace('.', ' · ') + ': ' + f.name.replace(/^\d+-/, '')); a.target = '_blank'; a.rel = 'noopener'; a.href = '#';
+          a.addEventListener('click', function(e){ e.preventDefault(); PM.fileUrl(b.id + '/' + fo.name + '/' + f.name).then(function(u){ window.open(u, '_blank'); }); });
+          files.appendChild(a); }); }); }); }).catch(function(){});
+        if (b.stage === 'building' || b.stage === 'setup'){
+          var bx = el('div', 'built'); bx.appendChild(el('span', 'meta', 'When his app is built: paste the menu, one item per line as "name | detail", then mark it built. He gets step 3.'));
+          var ta = el('textarea'); ta.placeholder = 'The OG | Ketchup, mustard, onion, pickles · $9'; bx.appendChild(ta);
+          var mb = el('button', '', 'Mark built'); mb.addEventListener('click', function(){
+            var items = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean).map(function(l, n){ var p = l.split('|'); return { id: 'i' + (n + 1), name: p[0].trim(), detail: (p[1] || '').trim() }; });
+            if (!items.length){ err.textContent = 'Paste the menu first.'; return; }
+            mb.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: items }).then(load).catch(function(e){ mb.disabled = false; err.textContent = e.message; });
+          }); bx.appendChild(mb); card.appendChild(bx);
+        }
         var jobs = el('div', 'jobs');
         if (!b.jobs.length) jobs.appendChild(el('span', 'none', 'Nothing waiting on us.'));
         b.jobs.forEach(function(j){
@@ -87,6 +108,10 @@
     if (e.type === 'started') return 'started an account';
     if (e.type === 'task_done') return 'finished "' + (e.detail.section || '') + '" → ' + (e.detail.job || '');
     if (e.type === 'account_made') return 'account made by us';
+    if (e.type === 'step_done') return 'finished step "' + (e.detail.step || '') + '" → ' + (e.detail.job || '');
+    if (e.type === 'built') return 'we marked it built (' + (e.detail.items || 0) + ' items to check)';
+    if (e.type === 'review_note') return 'note on "' + (e.detail.item || '') + '": ' + (e.detail.note || '');
+    if (e.type === 'approved') return 'approved the menu';
     return e.type;
   }
   function when(iso){ var d = new Date(iso); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }

@@ -10,6 +10,9 @@ window.PM = window.PM || (function(){
     session: function(){ return sb.auth.getSession().then(function(r){ return r.data.session; }); },
     signIn: function(email, password){ return sb.auth.signInWithPassword({ email: email, password: password }).then(function(r){ if (r.error) fail(r.error); return r.data.session; }); },
     signUp: function(email, password, name){ return sb.auth.signUp({ email: email, password: password, options: { data: { name: name } } }).then(function(r){ if (r.error) fail(r.error); if (!r.data.session) throw new Error('The account was made but could not be opened. Log in with your email and password.'); return r.data.session; }); },
-    signOut: function(){ return sb.auth.signOut(); }
+    signOut: function(){ return sb.auth.signOut(); },
+    upload: function(path, file){ return sb.storage.from('intake').upload(path, file, { upsert: true, contentType: file.type || undefined }).then(function(r){ if (r.error) fail(r.error); return r.data.path; }); },
+    fileUrl: function(path){ return sb.storage.from('intake').createSignedUrl(path, 3600).then(function(r){ if (r.error) fail(r.error); return r.data.signedUrl; }); },
+    listFiles: function(prefix){ return sb.storage.from('intake').list(prefix, { limit: 200 }).then(function(r){ if (r.error) fail(r.error); return r.data; }); }
   };
 })();

@@ -8,9 +8,11 @@ Client apps (Buns & Patties and the ones after it) live in their own repos; this
 | `index.html` | Home: the pitch, how it works, and **Start**: kind of business, its name, his name, email, mobile → a code to his email → his list opens. He made his own account; nobody calls anybody. |
 | `pricing.html` | Pricing, its own page like Owner.com's: free for founding clients, the bills in his own name. |
 | `login.html` | Email, then a 6-digit code sent to it (Supabase Auth, no password). |
-| `account.html` | His list: his template's sections, every box saving as he types. Shown for the business whose `owner_email` is the login. |
+| `account.html` | His setup: six steps as cards (Done / N left / Pending / Not yet), a bar, Continue. |
+| `step.html?s=s1` | One step: only that step's boxes, saving as he types, uploads straight from the phone, Next step. |
+| `review.html` | Step 3, the menu check: each item we built, Looks right or a note. A note is a fix job; all ticked is approval. |
 | `team.html` | Ours (emails in the `team` table): every business, how far it is, the jobs waiting on us with a Done button, and what happened lately. |
-| `pm.css`, `pm.js` | One look and one door to the database for every page. |
+| `pm.css`, `pm.js`, `intake.css`, `intake.js` | One look, one door to the database, one renderer for the intake. |
 | `netlify.toml` | Hosting: plain files, no build. |
 
 The database is the Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjqwbye`, org Sahin LLC):
@@ -18,12 +20,11 @@ The database is the Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjq
 `get_account`, `save_answer`; `team_overview` and `job_done` answer only for team emails. Nothing is
 open to a visitor who has not checked his email.
 
-Templates: `food-truck`, `restaurant`, `gas-station`, `other`. The three newer ones are the Food Truck
+Templates: `food-truck-v2` (the stepped one Serdar is on: steps 1 your business, 2 menu and logo → build job, 3 check your menu after we mark Built, 4 web address / D-U-N-S / Apple / Google, 5 Square, 6 launch), plus the older flat `food-truck`, `restaurant`, `gas-station`, `other`. The three newer ones are the Food Truck
 list with its place section reworded; change them in the `templates` table as the first restaurant or
 station teaches us something.
 
-We reach out to owners ourselves; the site is the intake and the rails. A finished section adds a job
-for us; the team page is where we work them off until each job is automated. A finished section starts the job its
+We reach out to owners ourselves; the site is the intake and the rails. A finished section adds a job for us, a finished step 2 adds the build job; on the team page we work them off, paste the built menu and mark Built, which opens step 3 for him. Uploads go to the private `intake` bucket, one folder per business, and show on the team page. A finished section starts the job its
 template names (`jobs` table). The Food Truck template is the client sheet from the Buns-Patties repo
 (`tools/client-sheet/food-truck.html`) plus a `job` line per section; the plan is `docs/PLAYBOOK.md`
 section 7 there.
