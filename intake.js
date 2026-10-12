@@ -53,8 +53,8 @@ window.Intake = (function(){
         if (f.url){ var fg = el('a', 'go', f.go || 'Open'); fg.href = f.url; fg.target = '_blank'; fg.rel = 'noopener'; wrap.appendChild(fg); }
         if (f.note) wrap.appendChild(el('p', 'note', f.note));
         if (f.file){
-          var have = el('p', 'have', state[key] ? 'Uploaded: ' + state[key] : ''); wrap.appendChild(have);
-          var pick = el('label', 'pick', state[key] ? (f.multi ? 'Add more' : 'Replace') : (f.multi ? 'Choose photos' : 'Choose a file'));
+          var have = el('p', 'have', state[key] ? 'On file: ' + state[key] : ''); wrap.appendChild(have);
+          var pick = el('label', 'pick', state[key] ? 'Upload more' : (f.multi ? 'Upload files' : 'Upload a file'));
           var inp = el('input'); inp.type = 'file'; inp.accept = f.accept || ''; if (f.multi) inp.multiple = true; inp.id = id; pick.htmlFor = id; pick.appendChild(inp);
           inp.addEventListener('change', function(){
             var files = Array.prototype.slice.call(inp.files || []); if (!files.length) return;
@@ -65,7 +65,7 @@ window.Intake = (function(){
               return PM.upload(acct.id + '/' + key + '/' + Date.now() + '-' + clean, file).then(function(){ names.push(file.name); });
             }); }, Promise.resolve()).then(function(){
               state[key] = (f.multi && state[key] ? state[key] + ', ' : '') + names.join(', ');
-              have.textContent = 'Uploaded: ' + state[key]; pick.firstChild.textContent = f.multi ? 'Add more' : 'Replace'; inp.value = '';
+              have.textContent = 'On file: ' + state[key]; pick.firstChild.textContent = 'Upload more'; inp.value = '';
               save(key);
             }).catch(function(err){ savingEl.className = 'saving err'; savingEl.textContent = 'Upload failed: ' + err.message; inp.value = ''; });
           });
