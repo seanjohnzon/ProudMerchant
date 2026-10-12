@@ -60,7 +60,7 @@
 <div class="narrow">
   <header class="bar">
     <a class="brand" href="./"><i></i>Proud Merchant</a>
-    <nav class="links" aria-label="Account"><span id="who" style="color:var(--ink3);font-size:14px"></span><button class="linkish" id="out" hidden>Log out</button></nav>
+    <nav class="links" aria-label="Account"><span id="who" style="color:var(--ink3);font-size:14px"></span><a id="teamLink" href="team.html" hidden>Team</a><button class="linkish" id="out" hidden>Log out</button></nav>
   </header>
   <div class="top"><h1 id="title">Your list</h1><span class="progress" id="progress"></span></div>
   <p class="mailto" id="intro" hidden>Invites go to <span class="email">cihanshah.sahin@gmail.com</span>. Never send a password or a Square code.</p>
@@ -86,8 +86,9 @@
     document.getElementById('who').textContent = s.user.email;
     var out = document.getElementById('out'); out.hidden = false;
     out.addEventListener('click', function(){ PM.signOut().then(function(){ location.replace('login.html'); }); });
+    PM.rpc('team_overview').then(function(o){ if (o) document.getElementById('teamLink').hidden = false; }).catch(function(){});
     return PM.rpc('get_account').then(function(acct){
-      if (!acct){ empty.hidden = false; empty.textContent = 'You are logged in, but no business is set up for ' + s.user.email + ' yet. We set it up after your demo call.'; return; }
+      if (!acct){ empty.hidden = false; empty.innerHTML = 'You are logged in as <b></b>, but there is no business on it yet. <a href="./#start">Start one</a>, it takes two minutes.'; empty.querySelector('b').textContent = s.user.email; return; }
       build(acct);
     });
   }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
