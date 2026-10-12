@@ -22,6 +22,7 @@
 .have:empty{display:none}
 .pick{justify-self:start;background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px 13px;font-size:15px;cursor:pointer;font-weight:600}
 .pick input{position:absolute;width:1px;height:1px;opacity:0}
+.pick.small{background:none;border:0;padding:0;font-weight:400;font-size:14px;color:var(--ink2);text-decoration:underline}
 .tag{font-weight:600;font-size:11px;padding:1px 7px;border-radius:4px;background:var(--tint);color:var(--ink3);letter-spacing:.02em}
 .tag.req{background:var(--todo);color:#fff}
 .f.filled .tag.req{background:var(--done)}

@@ -51,7 +51,8 @@
       document.getElementById('no').textContent = (i + 1) + '.'; document.getElementById('name').textContent = st.title;
       document.getElementById('hint').textContent = st.hint || '';
       var secs = st.sections.map(function(id){ return bySec[id]; }).filter(Boolean);
-      function paintTop(){ var x = Intake.stepState(acct, st); document.getElementById('progress').textContent = x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left'; }
+      function paintTop(){ var x = Intake.stepState(acct, st); document.getElementById('progress').textContent = x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left';
+        if (st.job && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'setup' || acct.stage === 'building' ? 'Done. We are building your app from this.' : 'Done. We built your app from this.'; }
       Intake.render(document.getElementById('sections'), acct, secs, saving, paintTop); paintTop();
       var row = document.getElementById('nextrow'), next = steps[i + 1];
       while (next && next.review && (acct.stage === 'setup' || acct.stage === 'building')) next = steps[steps.indexOf(next) + 1];
