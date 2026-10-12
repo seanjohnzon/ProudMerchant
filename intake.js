@@ -37,6 +37,8 @@ window.Intake = (function(){
         s.fields.forEach(function(f){ var w = document.getElementById('f-' + s.id + '-' + f.id); w.classList.toggle('filled', filled(state, s, f)); w.hidden = !shown(state, s, f); });
       });
     }
+    // Boxes we already know from his account open filled in (and are saved so they count).
+    sections.forEach(function(s){ s.fields.forEach(function(f){ var key = s.id + '.' + f.id; if (f.from && !state[key] && acct[f.from]){ state[key] = String(acct[f.from]); save(key); } }); });
     sections.forEach(function(s){
       var sec = el('section', 'sec'); sec.id = 'sec-' + s.id;
       var head = el('div', 'sec-head'); head.appendChild(el('h2', '', s.title)); var c = el('span', 'chip'); head.appendChild(c); sec.appendChild(head); chips[s.id] = c;
