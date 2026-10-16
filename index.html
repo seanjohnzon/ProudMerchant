@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
 <title>Proud Merchant</title>
 <meta name="description" content="Your own ordering and rewards app, under your name. Proud Merchant builds it for small businesses. Food trucks first.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
@@ -101,7 +102,7 @@
       <li><div><b>Your menu, your logo, your hours</b><p>Three files and a few boxes: hours, phone, your Google Maps listing, your socials, your rewards. Each saves as you type.</p><span class="who">You, in a sitting</span></div></li>
       <li><div><b>We draft your menu, you check it</b><p>Item by item, in words: the price, what it comes with, what a customer chooses, the extras. Right, or a note. Nothing gets built from a guess.</p><span class="who">Us, then you</span></div></li>
       <li><div><b>We build, you try it on your phone</b><p>The test app on your own phone and in your browser. You order, you check each screen, you say go. A note comes back fixed.</p><span class="who">Us, then you</span></div></li>
-      <li><div><b>Payments, your accounts, live</b><p>Your own Square or Stripe takes the orders. Apple and Google only once you have approved the app. Your website goes live first, the app when the stores approve it.</p><span class="who">You and us</span></div></li>
+      <li><div><b>Payments, your accounts, the final test, live</b><p>Your own Square or Stripe takes the orders. Apple and Google only once you have approved the app. Then a final test on the real thing, you and our tester, real orders: Pass or Fail, each one. Your website goes live first, the app when the stores approve it.</p><span class="who">You and us</span></div></li>
     </ol>
   </section>
 
@@ -111,10 +112,10 @@
     <form class="demo" id="startForm" novalidate>
       <div class="f"><span class="lab">Kind of business</span>
         <div class="choice" role="group" aria-label="Kind of business" id="kind">
-          <button type="button" data-v="food-truck-v9" aria-pressed="true">Food truck</button>
-          <button type="button" data-v="restaurant-v3" aria-pressed="false">Restaurant</button>
-          <button type="button" data-v="gas-station-v3" aria-pressed="false">Gas station</button>
-          <button type="button" data-v="other-v3" aria-pressed="false">Something else</button>
+          <button type="button" data-v="food-truck-v10" aria-pressed="true">Food truck</button>
+          <button type="button" data-v="restaurant-v4" aria-pressed="false">Restaurant</button>
+          <button type="button" data-v="gas-station-v4" aria-pressed="false">Gas station</button>
+          <button type="button" data-v="other-v4" aria-pressed="false">Something else</button>
         </div></div>
       <div class="f"><label for="bname">Business name</label><input id="bname" type="text" autocomplete="organization" placeholder="As your customers know it" required></div>
       <div class="f"><label for="pname">Your name</label><input id="pname" type="text" autocomplete="name" required></div>
@@ -140,7 +141,7 @@
 <script>
 (function(){
   PM.session().then(function(s){ if (s){ var n = document.getElementById('navLogin'); n.textContent = 'Your list'; n.href = 'account.html'; } });
-  var kind = "food-truck-v9";
+  var kind = "food-truck-v10";
   document.querySelectorAll('#kind button').forEach(function(b){ b.addEventListener('click', function(){ kind = b.dataset.v; document.querySelectorAll('#kind button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var form = document.getElementById('startForm'), msg = document.getElementById('msg'), go = document.getElementById('go');
   form.addEventListener('submit', function(e){

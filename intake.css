@@ -47,3 +47,6 @@
 .okb.all{font-size:13.5px;padding:4px 11px;color:var(--ink2)}
 .reply{background:var(--tint);border-left:4px solid var(--brass);border-radius:6px;padding:8px 10px;font-size:14.5px}
 .where .d{margin:0;font-size:15px} .where .d b{color:var(--ink)}
+.item.fail{border-left-color:var(--todo);background:var(--card)}
+.okb.failb[aria-pressed="true"]{background:var(--todo);border-color:var(--todo)}
+.item .tester{color:var(--ink);background:var(--tint);border-radius:6px;padding:6px 10px}

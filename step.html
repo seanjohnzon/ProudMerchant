@@ -55,11 +55,12 @@
       var host = document.getElementById('sections');
       function paintTop(){
         var x = Intake.stepState(acct, st);
-        document.getElementById('progress').textContent = st.review ? (x.done + ' of ' + x.total + (st.review === 'menu' ? ' right' : ' look right'))
+        document.getElementById('progress').textContent = st.review ? (x.done + ' of ' + x.total + (st.review === 'menu' ? ' right' : st.review === 'uat' ? ' pass' : ' look right'))
           : x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left';
         if (!st.review && st.job && x.status === 'done') document.getElementById('hint').textContent = st.id === 's1' ? 'Done. We are drafting your menu from this; step 3 opens when it is ready.' : st.hint || '';
         if (st.review === 'menu' && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'building' ? 'All right. We are building your test app from this; step 4 opens when it is on your phone.' : 'All right. Your app is built from this.';
         if (st.review === 'app' && x.status === 'done') document.getElementById('hint').textContent = 'Approved. Payments and your own accounts are next.';
+        if (st.review === 'uat' && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'uat_passed' ? 'Passed on both sides. Launch is next.' : 'All passed on your side. Our tester finishes the same list, then launch.';
       }
       if (st.review){
         Intake.renderReview(host, acct, st, saving, function(){ PM.rpc('get_account').then(function(a){ acct.stage = a.stage; acct.review = a.review; paintTop(); }).catch(function(){ paintTop(); }); });
