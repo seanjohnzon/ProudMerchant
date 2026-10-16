@@ -33,7 +33,7 @@ project, on `main` drop the noindex meta. The server is Supabase; GitHub only ha
 |---|---|---|---|---|
 | 1 | Your menu and logo | him | at once | name, logo, menu in → **job: menu into the app, web preview up, Mark built** |
 | 2 | About your business | him | at once | hours, phone, Maps listing, story, socials, delivery, rewards (Maps pending at Google counts as ready) |
-| 3 | Try your app | him | when we Mark built (the preview in his browser, or TestFlight) | not QA: every line is how his app works now (his menu, then the look, ordering, rewards, account and owner, from his own list): **Looks good**, or **Change** and what instead; his notes under every part, a box at the end, each with Save and a Saved time. Menu all good → **job: native build, TestFlight**; all good + native up → **approved**. QA (Pass/Fail, kind `qa`) is the tester's, on the team page, never shown to him |
+| 3 | Try your app | him | when we Mark built (the preview in his browser, or TestFlight) | not QA: every line is how his app works now (one part per tab of his app: Home, Menu with how ordering works, Rewards, Orders, Account with the owner screens; from his own list): **Looks good**, or **Change** and what instead; his notes under every part, a box at the end, each with Save and a Saved time. Menu all good → **job: native build, TestFlight**; all good + native up → **approved**. QA (Pass/Fail, kind `qa`) is the tester's, on the team page, never shown to him |
 | 4 | Payments | him | at once (costs nothing) | Square or Stripe, account email; the Connect/Allow link comes after approval |
 | 5 | Web address, D-U-N-S, Apple, Google | him | after approval | as before |
 | 6 | Final test | him and our tester | when we mark it ready (his address live, his payments connected, the app on his phone) | 16 checks on the real thing, positive and negative, each Pass or Fail with a note, on both sides → **uat_passed** |
@@ -54,7 +54,7 @@ Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjqwbye`, org Sahin LLC
 `team_reply`, `team_notes_reply`, `team_built`, `team_uat_ready`, `team_uat`, `job_done` answer only for team emails. Uploads go to the private `intake` bucket, one
 folder per business.
 
-Templates: `food-truck-v14` (Serdar's), `restaurant-v8`, `gas-station-v8`, `other-v8`; the Start page names them.
+Templates: `food-truck-v15` (Serdar's), `restaurant-v9`, `gas-station-v9`, `other-v9`; the Start page names them.
 Older rows stay for reference. The restaurant / gas station / other ones differ only in the rewards choices
 (points as well as stamps) and one label.
 

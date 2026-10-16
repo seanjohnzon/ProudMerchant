@@ -131,8 +131,11 @@ window.Intake = (function(){
       c.yes.setAttribute('aria-pressed', String(it.result === YES)); c.no.setAttribute('aria-pressed', String(it.result === NO));
       c.note.hidden = !(it.result === NO || (it.note || '').trim() || it.reply); }
     function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); paintCats(); }
-    function catOf(i){ return kind === 'app' && i.kind === 'menu' ? 'Menu' : (i.section || 'Checks'); }
+    function catOf(i){ return kind === 'app' && i.kind === 'menu' ? 'Menu' : String(i.section || 'Checks').split(' · ')[0]; }
+    function subOf(i){ return kind === 'app' && i.kind === 'menu' ? i.section : (String(i.section || '').split(' · ')[1] || ''); }
+    var ORDER = ['Home', 'Menu', 'Rewards', 'Orders', 'Account'];
     var cats = []; items.forEach(function(i){ var c = catOf(i); if (cats.indexOf(c) < 0) cats.push(c); });
+    if (!uat) cats.sort(function(a, b){ var x = ORDER.indexOf(a), y = ORDER.indexOf(b); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); });
     var catEls = {};
     function paintCats(){
       cats.forEach(function(c){
@@ -182,7 +185,7 @@ window.Intake = (function(){
       }
       var lastSub = null;
       mine.forEach(function(it){
-        if (c === 'Menu' && it.section !== lastSub){ body.appendChild(el('h3', 'sub', it.section)); lastSub = it.section; }
+        var sub = subOf(it); if (sub && sub !== lastSub){ body.appendChild(el('h3', 'sub', sub)); lastSub = sub; }
         var card = el('div', 'line');
         var top = el('div', 'top'); var nm = el('button', 'nm', it.name); nm.type = 'button'; top.appendChild(nm);
         var btns = el('div', 'btns'), yb = el('button', 'okb', yesWord), nb = el('button', 'okb failb', noWord); yb.type = 'button'; nb.type = 'button'; btns.appendChild(yb); btns.appendChild(nb); top.appendChild(btns);
