@@ -10,9 +10,16 @@ Three branches, three environments; code moves up by merge, never by hand:
 | `uat` | uat.proudmerchant.com, its own Supabase project, email + a code (not up yet) | `sit` merged up when a SIT round passes |
 | `main` | proudmerchant.com, production (not up yet) | `uat` merged up on a release |
 
-Hosting: SIT on GitHub Pages from `sit` (`CNAME` in the repo; a CNAME record `sit → seanjohnzon.github.io` at GoDaddy).
-UAT and production on Netlify (one branch each; `netlify.toml` is here), where the client sites go too. The site is plain
-files, so a host swap is a settings change, never a code change. `pm.js` on each branch names that environment's database.
+Hosting: Netlify, one site per environment, each deploying its own branch straight from this repo (`netlify.toml`:
+plain files, no build, pages marked noindex on `sit` and `uat`). The client sites live on Netlify too, so one host, one
+habit. Each environment has its own Supabase project; `pm.js` on each branch names it. Promotion checklist: merge up,
+point `pm.js` at that environment's project, on `main` drop the noindex meta.
+
+| | Netlify site | Branch | Address | DNS at GoDaddy |
+|---|---|---|---|---|
+| SIT | proudmerchant-sit | `sit` | sit.proudmerchant.com | CNAME `sit` → `proudmerchant-sit.netlify.app` |
+| UAT | proudmerchant-uat | `uat` | uat.proudmerchant.com | CNAME `uat` → `proudmerchant-uat.netlify.app` |
+| Production | proudmerchant | `main` | proudmerchant.com, www | A/ALIAS as Netlify shows when the domain is added |
 
 | File | What it is |
 |---|---|
