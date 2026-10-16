@@ -81,7 +81,7 @@
       mid.appendChild(el('small', '', locked ? Intake.lockText(x.why) : (st.hint || '')));
       a.appendChild(mid);
       var chip = el('span', 'chip' + (x.status === 'done' ? ' ok' : x.status === 'pending' ? ' wait' : locked ? ' lock' : ''),
-        x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : locked ? 'Not yet' : (st.review === 'menu' ? x.left + ' to check' : st.review ? x.left + ' to pass' : x.left + ' left'));
+        x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : locked ? 'Not yet' : (st.review ? x.left + ' to pass' : x.left + ' left'));
       a.appendChild(chip); host.appendChild(a);
       if (x.status === 'done') doneSteps++;
       if (!first && x.status === 'todo') first = { href: a.href, title: st.title, i: i + 1 };

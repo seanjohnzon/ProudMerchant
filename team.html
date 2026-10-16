@@ -66,7 +66,7 @@
 (function(){
   var err = document.getElementById('err'), okmsg = document.getElementById('okmsg');
   var SITE = location.href.replace(/[^/]*$/, '');
-  var STAGE = { setup: 'Filling in steps 1 and 2', drafting: 'Waiting on us: draft the menu', menu_check: 'He is checking the menu draft (step 3)', building: 'Waiting on us: build the test app', app_check: 'He is trying the app (step 4)', approved: 'Approved. Payments and accounts (5, 6); final test when the real thing is up', uat: 'Final test (step 7): owner and tester', uat_passed: 'Final test passed. Launch (step 8)', live: 'Live' };
+  var STAGE = { setup: 'Filling in steps 1 and 2', drafting: 'Waiting on us: menu into the app, preview up', building: 'Waiting on us: the app', app_check: 'He is trying the app (step 3)', approved: 'Approved. Payments and accounts (4, 5); final test when the real thing is up', uat: 'Final test (step 6): owner and tester', uat_passed: 'Final test passed. Launch (step 7)', live: 'Live' };
   PM.session().then(function(s){
     if (!s){ location.replace('login.html'); return; }
     document.getElementById('who').textContent = s.user.email;
@@ -91,7 +91,7 @@
         var bar = el('div', 'prog'); var fill = el('i'); fill.style.width = (b.total ? Math.round(100 * b.done / b.total) : 0) + '%'; bar.appendChild(fill); card.appendChild(bar);
         card.appendChild(el('p', 'meta', [b.kind, b.contact, b.phone, b.email, 'started ' + when(b.started), b.last_answer ? 'last answer ' + when(b.last_answer) : ''].filter(Boolean).join(' · ')));
         var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', STAGE[b.stage] || b.stage));
-        stage.appendChild(document.createTextNode(' · menu draft ' + b.menu.ok + '/' + b.menu.n + ' right · app ' + b.app.ok + '/' + b.app.n + ' pass' + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
+        stage.appendChild(document.createTextNode(' · menu ' + b.menu.ok + '/' + b.menu.n + ' pass · screens ' + b.app.ok + '/' + b.app.n + ' pass' + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
         card.appendChild(stage);
         var files = el('div', 'files'); card.appendChild(files);
         PM.listFiles(b.id).then(function(folders){ (folders || []).forEach(function(fo){ PM.listFiles(b.id + '/' + fo.name).then(function(fs){ (fs || []).forEach(function(f){
@@ -108,41 +108,42 @@
         });
 
         // His own notes under a list, with our reply.
-        ['menu', 'app', 'uat'].forEach(function(k){
-          var txt = b.links[k + '.notes']; if (!txt) return;
-          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', 'His notes on ' + (k === 'menu' ? 'the menu draft' : k === 'app' ? 'the test app' : 'the final test') + ': ')); q.appendChild(document.createTextNode(txt)); box.appendChild(q);
-          if (b.links[k + '.notes_reply']) box.appendChild(el('span', 'meta', 'Our reply: ' + b.links[k + '.notes_reply']));
-          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under his notes box.'; box.appendChild(ta);
-          var btn = el('button', '', 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_notes_reply', { p_business: b.id, p_kind: k, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
+        Object.keys(b.links).sort().forEach(function(key){
+          var m = key.match(/^(menu|app|uat)\.notes(?:\.([a-z0-9_]+))?$/); if (!m || !b.links[key]) return;
+          var k = m[1], part = m[2] || '', rk = k + '.notes_reply' + (part ? '.' + part : '');
+          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', 'His notes on ' + (k === 'app' ? 'the app' : k === 'uat' ? 'the final test' : 'the menu') + (part ? ' · ' + part.replace(/_/g, ' ') : ' · anything else') + ': ')); q.appendChild(document.createTextNode(b.links[key])); box.appendChild(q);
+          if (b.links[rk]) box.appendChild(el('span', 'meta', 'Our reply: ' + b.links[rk]));
+          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under that notes box.'; box.appendChild(ta);
+          var btn = el('button', '', b.links[rk] ? 'Reply again' : 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_notes_reply', { p_business: b.id, p_kind: k, p_section: part, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
           box.appendChild(btn); card.appendChild(box);
         });
 
         // Post the draft (step 3 opens), or repost after a fix.
-        if (b.stage === 'setup' || b.stage === 'drafting' || b.stage === 'menu_check'){
-          var p1 = el('div', 'panel'); p1.appendChild(el('h4', '', b.menu.n ? 'Repost the menu draft (fixes)' : 'Post the menu draft'));
+        if (b.stage === 'setup' || b.stage === 'drafting' || b.stage === 'building' || b.stage === 'app_check'){
+          var p1 = el('div', 'panel'); p1.appendChild(el('h4', '', b.menu.n ? 'Repost the menu (fixes)' : 'Post the menu, as it is in the app'));
           p1.appendChild(el('span', 'meta', 'Paste a JSON list [{"id","section","name","detail"}] (detail: one line per fact, "Comes with: …", "You choose: …"), or lines "Section | Name · $price | detail; more". Same ids update in place.'));
           var ta1 = el('textarea'); ta1.placeholder = 'Smash Burgers | The OG · $9 | Comes with: sliced onion, pickles; You choose: patty: single, double +$2'; p1.appendChild(ta1);
           var b1 = el('button', 'go', b.menu.n ? 'Repost' : 'Post the draft'); b1.addEventListener('click', function(){
             var items = parseItems(ta1.value); if (!items.length){ err.textContent = 'Paste the draft first.'; return; }
-            b1.disabled = true; PM.rpc('team_post', { p_business: b.id, p_items: items }).then(function(){ okmsg.textContent = items.length + ' items posted. His step 3 is open.'; return load(); }).catch(function(e){ b1.disabled = false; err.textContent = e.message; });
+            b1.disabled = true; PM.rpc('team_post', { p_business: b.id, p_items: items }).then(function(){ okmsg.textContent = items.length + ' items posted. Mark built with the preview link to open his step 3.'; return load(); }).catch(function(e){ b1.disabled = false; err.textContent = e.message; });
           }); p1.appendChild(b1); card.appendChild(p1);
         }
 
         // Mark built (step 4 opens), or update the links.
         if (b.menu.n){
-          var p2 = el('div', 'panel'); p2.appendChild(el('h4', '', b.app.n ? 'Update the test app links' : 'Mark the test app built'));
-          var tf = el('input'); tf.placeholder = 'iPhone: e.g. "B&P Test on TestFlight, invite sent to his email"'; tf.value = b.links['app.testflight'] || '';
-          var wb = el('input'); wb.placeholder = 'Browser link: https://…sit.proudmerchant.com'; wb.value = b.links['app.web'] || '';
+          var p2 = el('div', 'panel'); p2.appendChild(el('h4', '', b.app.n ? 'Save links (the TestFlight line marks the native build done)' : 'Mark built: the preview or the app is on his phone (opens step 3)'));
+          var wb = el('input'); wb.placeholder = 'Browser preview: https://…sit.proudmerchant.com'; wb.value = b.links['app.web'] || '';
+          var tf = el('input'); tf.placeholder = 'iPhone: e.g. "B&P Test on TestFlight, invite sent to his email" (blank until the native build is up)'; tf.value = b.links['app.testflight'] || '';
           var an = el('input'); an.placeholder = 'Android install link (or blank)'; an.value = b.links['app.android'] || '';
-          p2.appendChild(tf); p2.appendChild(wb); p2.appendChild(an);
+          p2.appendChild(wb); p2.appendChild(tf); p2.appendChild(an);
           var b2 = el('button', 'go', b.app.n ? 'Save links' : 'Mark built'); b2.addEventListener('click', function(){
-            b2.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: { links: { testflight: tf.value.trim(), web: wb.value.trim(), android: an.value.trim() } } }).then(function(){ okmsg.textContent = 'Built. His step 4 opens once his menu check is done.'; return load(); }).catch(function(e){ b2.disabled = false; err.textContent = e.message; });
+            b2.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: { links: { testflight: tf.value.trim(), web: wb.value.trim(), android: an.value.trim() } } }).then(function(){ okmsg.textContent = 'Saved. His step 3 is open.'; return load(); }).catch(function(e){ b2.disabled = false; err.textContent = e.message; });
           }); p2.appendChild(b2); card.appendChild(p2);
         }
 
         // The final test: mark it ready (the real thing is up), then our tester's Pass / Fail on the same list.
         if (b.stage === 'approved' || b.stage === 'uat' || b.stage === 'uat_passed' || b.stage === 'live'){
-          var p4 = el('div', 'panel'); p4.appendChild(el('h4', '', b.uat.n ? 'Update the final-test links' : 'Mark the final test ready (opens his step 7)'));
+          var p4 = el('div', 'panel'); p4.appendChild(el('h4', '', b.uat.n ? 'Update the final-test links' : 'Mark the final test ready (opens his step 6)'));
           p4.appendChild(el('span', 'meta', 'Only when the real thing is up: his web address live, his Square or Stripe connected, the app on TestFlight or in the stores.'));
           var uw = el('input'); uw.placeholder = 'His website: https://…'; uw.value = b.links['uat.web'] || '';
           var ut = el('input'); ut.placeholder = 'iPhone: TestFlight or App Store link'; ut.value = b.links['uat.testflight'] || '';
@@ -200,26 +201,25 @@
   }
   function emailFor(b){
     var first = (b.contact || '').split(' ')[0] || 'there', login = SITE + 'login.html';
-    if (b.stage === 'menu_check') return 'Hi ' + first + ',\n\nYour menu draft is ready to check: ' + login + ' (your email and password), then step 3. Each item: Right, or write what is wrong under it. About ten minutes. Anything missing goes in the box at the bottom.\n\nWe build the test app from what you approve there.\n\nCihan, Proud Merchant';
-    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour test app is ready.' + (b.links.testflight ? '\n\niPhone: ' + b.links.testflight : '') + (b.links.web ? '\nBrowser: ' + b.links.web : '') + (b.links.android ? '\nAndroid: ' + b.links.android : '') + '\n\nThen ' + login + ', step 4: 25 checks in the order a customer meets them, each one Pass or Fail with what you saw; anything else goes in the notes box at the bottom, pasted as you have it. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
-    if (b.stage === 'approved') return 'Hi ' + first + ',\n\nYour app is approved. Next on your list: ' + login + ' — step 5 (your Square or Stripe) and step 6 (your web address, D-U-N-S, Apple and Google). Those last ones cost a little and take days on their side, so the sooner they start the better.\n\nCihan, Proud Merchant';
-    if (b.stage === 'uat') return 'Hi ' + first + ',\n\nThe real thing is up' + (b.links['uat.web'] ? ': ' + b.links['uat.web'] : '') + (b.links['uat.testflight'] ? '\niPhone: ' + b.links['uat.testflight'] : '') + (b.links['uat.android'] ? '\nAndroid: ' + b.links['uat.android'] : '') + '\n\nStep 7 at ' + login + ' is the final test: 16 checks, real card, real orders (refund them after). Each one Pass, or Fail with what happened. Our tester does the same list; when both pass, we launch.\n\nCihan, Proud Merchant';
-    if (b.stage === 'uat_passed') return 'Hi ' + first + ',\n\nThe final test passed on both sides. Step 8 is launch: the photos, the QR sticker, twenty minutes with your staff, and the day you switch to Open.\n\nCihan, Proud Merchant';
-    return 'Hi ' + first + ',\n\nYour setup list is at ' + login + ' (your email and password). Steps 1 and 2 are yours; we draft your menu as soon as step 1 is in.\n\nCihan, Proud Merchant';
+    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour app is ready to try.' + (b.links['app.web'] ? '\n\nBrowser: ' + b.links['app.web'] : '') + (b.links['app.testflight'] ? '\niPhone: ' + b.links['app.testflight'] : '') + (b.links['app.android'] ? '\nAndroid: ' + b.links['app.android'] : '') + '\n\nThen ' + login + ', step 3: your menu first, item by item, then every screen, each one Pass or Fail with what you saw. Notes under each part, or dump everything in the box at the end, pasted as you have it. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
+    if (b.stage === 'approved') return 'Hi ' + first + ',\n\nYour app is approved. Next on your list: ' + login + ' — step 4 (your Square or Stripe) and step 5 (your web address, D-U-N-S, Apple and Google). Those last ones cost a little and take days on their side, so the sooner they start the better.\n\nCihan, Proud Merchant';
+    if (b.stage === 'uat') return 'Hi ' + first + ',\n\nThe real thing is up' + (b.links['uat.web'] ? ': ' + b.links['uat.web'] : '') + (b.links['uat.testflight'] ? '\niPhone: ' + b.links['uat.testflight'] : '') + (b.links['uat.android'] ? '\nAndroid: ' + b.links['uat.android'] : '') + '\n\nStep 6 at ' + login + ' is the final test: 16 checks, real card, real orders (refund them after). Each one Pass, or Fail with what happened. Our tester does the same list; when both pass, we launch.\n\nCihan, Proud Merchant';
+    if (b.stage === 'uat_passed') return 'Hi ' + first + ',\n\nThe final test passed on both sides. Step 7 is launch: the photos, the QR sticker, twenty minutes with your staff, and the day you switch to Open.\n\nCihan, Proud Merchant';
+    return 'Hi ' + first + ',\n\nYour setup list is at ' + login + ' (your email and password). Steps 1 and 2 are yours; as soon as step 1 is in we put your menu into your app and send you a preview to try.\n\nCihan, Proud Merchant';
   }
-  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 's3' ? 'the approved draft' : sec === 'menu_note' ? 'a note on the menu draft' : sec === 'app_note' ? 'a Fail on the test app' : sec === 'uat_note' ? 'a Fail on the final test' : /_notes$/.test(sec) ? 'his notes box' : '"' + sec + '"'; }
+  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 'native' ? 'the approved menu' : sec === 'menu_note' ? 'a Fail on the menu' : sec === 'app_note' ? 'a Fail on a screen' : sec === 'uat_note' ? 'a Fail on the final test' : /_notes$/.test(sec) ? 'a notes box' : '"' + sec + '"'; }
   function plain(e){
     if (e.type === 'started') return 'started an account';
     if (e.type === 'task_done') return 'finished "' + (e.detail.section || '') + '" → ' + (e.detail.job || '');
     if (e.type === 'account_made') return 'account made by us';
     if (e.type === 'step_done') return 'finished step "' + (e.detail.step || '') + '" → ' + (e.detail.job || '');
-    if (e.type === 'draft_posted') return 'we posted the menu draft (' + (e.detail.items || 0) + ' items)';
-    if (e.type === 'menu_approved') return 'approved the menu draft';
-    if (e.type === 'build_queued') return 'build queued for us';
-    if (e.type === 'built') return 'we marked the test app built';
-    if (e.type === 'review_note') return 'note on ' + (e.detail.kind === 'app' ? 'the app, ' : 'the draft, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
+    if (e.type === 'draft_posted') return 'we posted the menu (' + (e.detail.items || 0) + ' items)';
+    if (e.type === 'menu_approved') return 'passed every menu item';
+    if (e.type === 'build_queued') return 'native build queued for us';
+    if (e.type === 'built') return 'we marked the app up (' + Object.keys(e.detail || {}).filter(function(k){ return e.detail[k]; }).join(', ') + ')';
+    if (e.type === 'review_note') return 'Fail on ' + (e.detail.kind === 'app' ? 'a screen, ' : e.detail.kind === 'uat' ? 'the final test, ' : 'the menu, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
     if (e.type === 'replied') return 'we replied on "' + (e.detail.item || '') + '": ' + (e.detail.reply || '');
-    if (e.type === 'notes') return 'wrote notes on ' + (e.detail.kind === 'app' ? 'the test app' : e.detail.kind === 'uat' ? 'the final test' : 'the menu draft') + ': ' + (e.detail.text || '');
+    if (e.type === 'notes') return 'wrote notes' + (e.detail.part ? ' on ' + String(e.detail.part).replace(/_/g, ' ') : '') + ': ' + (e.detail.text || '');
     if (e.type === 'approved') return 'approved the app';
     if (e.type === 'uat_ready') return 'we marked the final test ready';
     if (e.type === 'uat_fail') return 'Fail on the final test (' + (e.detail.by || '') + '), "' + (e.detail.item || '') + '": ' + (e.detail.note || '');
