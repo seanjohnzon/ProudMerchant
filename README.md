@@ -2,7 +2,14 @@
 
 The company's own site: the landing page, Start, and every customer's setup list. Client apps
 (Buns & Patties and the ones after it) live in their own repos; this is ours. Plain files, no build;
-GitHub Pages publishes `main` as it is at **sit.proudmerchant.com** (`CNAME`; a CNAME record `sit → seanjohnzon.github.io` at GoDaddy).
+Two environments, two branches:
+
+| | Branch | Address | Host | Database | Logins |
+|---|---|---|---|---|---|
+| **SIT** (now) | `sit` | sit.proudmerchant.com | GitHub Pages, from the `sit` branch (`CNAME` in the repo; at GoDaddy a CNAME record `sit → seanjohnzon.github.io`) | Supabase `proud-merchant` (ref `ecfscfmmgpefnpjqwbye`), real data | email + password, no codes |
+| **UAT** (later) | `main` | proudmerchant.com | Netlify from `main` (GitHub Pages serves one branch per repo, so the second environment goes on a second host; `netlify.toml` is already here) | a second Supabase project, `pm.js` on `main` points at it | email + a code |
+
+Work lands on `sit`; `main` moves only on a release. Pushing `sit` publishes within a minute or two.
 
 | File | What it is |
 |---|---|
