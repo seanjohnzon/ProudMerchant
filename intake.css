@@ -79,3 +79,7 @@
 .line .nwrap{display:grid;gap:6px}
 .line textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;min-height:44px;resize:vertical}
 .missing.part{min-height:48px;font-size:14px;background:var(--paper);margin-top:6px}
+.srow{display:flex;align-items:center;gap:10px}
+.savebtn{font:inherit;font-size:13.5px;font-weight:600;background:var(--ink);color:var(--paper);border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
+.stamp{font-size:13px;color:var(--ink3)} .stamp.ok{color:var(--done);font-weight:600} .stamp.err{color:var(--todo)}
+.nbox{display:grid;gap:6px}

@@ -91,7 +91,7 @@
         var bar = el('div', 'prog'); var fill = el('i'); fill.style.width = (b.total ? Math.round(100 * b.done / b.total) : 0) + '%'; bar.appendChild(fill); card.appendChild(bar);
         card.appendChild(el('p', 'meta', [b.kind, b.contact, b.phone, b.email, 'started ' + when(b.started), b.last_answer ? 'last answer ' + when(b.last_answer) : ''].filter(Boolean).join(' · ')));
         var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', STAGE[b.stage] || b.stage));
-        stage.appendChild(document.createTextNode(' · menu ' + b.menu.ok + '/' + b.menu.n + ' pass · screens ' + b.app.ok + '/' + b.app.n + ' pass' + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
+        stage.appendChild(document.createTextNode(' · menu ' + b.menu.ok + '/' + b.menu.n + ' good' + (b.menu.change ? ', ' + b.menu.change + ' to change' : '') + ' · app ' + b.app.ok + '/' + b.app.n + ' good' + (b.app.change ? ', ' + b.app.change + ' to change' : '') + (b.qa && b.qa.n ? ' · QA ' + b.qa.pass + '/' + b.qa.n + ' pass' + (b.qa.fail ? ', ' + b.qa.fail + ' fail' : '') : '') + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
         card.appendChild(stage);
         var files = el('div', 'files'); card.appendChild(files);
         PM.listFiles(b.id).then(function(folders){ (folders || []).forEach(function(fo){ PM.listFiles(b.id + '/' + fo.name).then(function(fs){ (fs || []).forEach(function(f){
@@ -101,8 +101,8 @@
 
         // Notes waiting for an answer.
         (b.notes || []).forEach(function(n){
-          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', (n.kind === 'menu' ? 'Menu draft · ' : n.kind === 'uat' ? 'Final test · ' : 'App · ') + n.name + ': ')); q.appendChild(document.createTextNode(n.note)); box.appendChild(q);
-          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under the item. For a menu note: fix the draft here too. For an app note: fix, push the update, then "Fixed, reopen the app."'; box.appendChild(ta);
+          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', (n.kind === 'uat' ? 'Final test, Fail · ' : n.kind === 'menu' ? 'Change on the menu · ' : 'Change · ') + n.name + ': ')); q.appendChild(document.createTextNode(n.note)); box.appendChild(q);
+          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under his line. Make the change (or say why not), then reply; he flips it to Looks good.'; box.appendChild(ta);
           var btn = el('button', '', 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_reply', { p_business: b.id, p_item: n.item, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
           box.appendChild(btn); card.appendChild(box);
         });
@@ -139,6 +139,24 @@
           var b2 = el('button', 'go', b.app.n ? 'Save links' : 'Mark built'); b2.addEventListener('click', function(){
             b2.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: { links: { testflight: tf.value.trim(), web: wb.value.trim(), android: an.value.trim() } } }).then(function(){ okmsg.textContent = 'Saved. His step 3 is open.'; return load(); }).catch(function(e){ b2.disabled = false; err.textContent = e.message; });
           }); p2.appendChild(b2); card.appendChild(p2);
+        }
+
+        // QA on the test app: ours, then Burak's. The owner never sees this list.
+        if (b.qa && b.qa.n){
+          var pq = el('div', 'panel'); pq.appendChild(el('h4', '', 'QA on the test app, our tester: ' + b.qa.pass + ' of ' + b.qa.n + ' pass' + (b.qa.fail ? ', ' + b.qa.fail + ' fail' : '')));
+          pq.appendChild(el('span', 'meta', 'Functionality, on the test app. Pass, or Fail with what happened (a Fail is a job for us). Not shown to the owner.'));
+          var qsec = null;
+          b.qa.items.forEach(function(it){
+            if (it.section !== qsec){ pq.appendChild(el('b', '', it.section)); qsec = it.section; }
+            var row = el('div', 'tcheck'); var head = el('div'); head.appendChild(el('b', '', it.name + ' ')); head.appendChild(el('span', 'meta', it.detail)); row.appendChild(head);
+            if (it.reply) row.appendChild(el('div', 'meta', 'Us: ' + it.reply));
+            var ctl = el('div', 'row'); var pb = el('button', '', 'Pass'); pb.className = 'tbtn' + (it.t_result === 'pass' ? ' on' : ''); var fb = el('button', '', 'Fail'); fb.className = 'tbtn fail' + (it.t_result === 'fail' ? ' on' : '');
+            var tn = el('input'); tn.placeholder = 'What happened (for a Fail)'; tn.value = it.t_note || '';
+            function send(res){ pb.disabled = fb.disabled = true; PM.rpc('team_uat', { p_business: b.id, p_item: it.item_id, p_result: res, p_note: tn.value.trim() }).then(load).catch(function(e){ pb.disabled = fb.disabled = false; err.textContent = e.message; }); }
+            pb.addEventListener('click', function(){ send(it.t_result === 'pass' ? '' : 'pass'); }); fb.addEventListener('click', function(){ send(it.t_result === 'fail' ? '' : 'fail'); });
+            ctl.appendChild(pb); ctl.appendChild(fb); ctl.appendChild(tn); row.appendChild(ctl); pq.appendChild(row);
+          });
+          card.appendChild(pq);
         }
 
         // The final test: mark it ready (the real thing is up), then our tester's Pass / Fail on the same list.
@@ -201,28 +219,28 @@
   }
   function emailFor(b){
     var first = (b.contact || '').split(' ')[0] || 'there', login = SITE + 'login.html';
-    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour app is ready to try.' + (b.links['app.web'] ? '\n\nBrowser: ' + b.links['app.web'] : '') + (b.links['app.testflight'] ? '\niPhone: ' + b.links['app.testflight'] : '') + (b.links['app.android'] ? '\nAndroid: ' + b.links['app.android'] : '') + '\n\nThen ' + login + ', step 3: your menu first, item by item, then every screen, each one Pass or Fail with what you saw. Notes under each part, or dump everything in the box at the end, pasted as you have it. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
+    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour app is ready to try.' + (b.links['app.web'] ? '\n\nBrowser: ' + b.links['app.web'] : '') + (b.links['app.testflight'] ? '\niPhone: ' + b.links['app.testflight'] : '') + (b.links['app.android'] ? '\nAndroid: ' + b.links['app.android'] : '') + '\n\nThen ' + login + ', step 3. Every line is how your app works now: tap Looks good, or Change and tell us what instead. Your own notes under every part, and a box at the end for anything else. We make the changes and reply there.\n\nCihan, Proud Merchant';
     if (b.stage === 'approved') return 'Hi ' + first + ',\n\nYour app is approved. Next on your list: ' + login + ' — step 4 (your Square or Stripe) and step 5 (your web address, D-U-N-S, Apple and Google). Those last ones cost a little and take days on their side, so the sooner they start the better.\n\nCihan, Proud Merchant';
     if (b.stage === 'uat') return 'Hi ' + first + ',\n\nThe real thing is up' + (b.links['uat.web'] ? ': ' + b.links['uat.web'] : '') + (b.links['uat.testflight'] ? '\niPhone: ' + b.links['uat.testflight'] : '') + (b.links['uat.android'] ? '\nAndroid: ' + b.links['uat.android'] : '') + '\n\nStep 6 at ' + login + ' is the final test: 16 checks, real card, real orders (refund them after). Each one Pass, or Fail with what happened. Our tester does the same list; when both pass, we launch.\n\nCihan, Proud Merchant';
     if (b.stage === 'uat_passed') return 'Hi ' + first + ',\n\nThe final test passed on both sides. Step 7 is launch: the photos, the QR sticker, twenty minutes with your staff, and the day you switch to Open.\n\nCihan, Proud Merchant';
     return 'Hi ' + first + ',\n\nYour setup list is at ' + login + ' (your email and password). Steps 1 and 2 are yours; as soon as step 1 is in we put your menu into your app and send you a preview to try.\n\nCihan, Proud Merchant';
   }
-  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 'native' ? 'the approved menu' : sec === 'menu_note' ? 'a Fail on the menu' : sec === 'app_note' ? 'a Fail on a screen' : sec === 'uat_note' ? 'a Fail on the final test' : /_notes$/.test(sec) ? 'a notes box' : '"' + sec + '"'; }
+  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 'native' ? 'the approved menu' : sec === 'menu_note' ? 'a Change on the menu' : sec === 'app_note' ? 'a Change on the app' : sec === 'qa_note' ? 'QA' : sec === 'uat_note' ? 'a Fail on the final test' : /_notes$/.test(sec) ? 'a notes box' : '"' + sec + '"'; }
   function plain(e){
     if (e.type === 'started') return 'started an account';
     if (e.type === 'task_done') return 'finished "' + (e.detail.section || '') + '" → ' + (e.detail.job || '');
     if (e.type === 'account_made') return 'account made by us';
     if (e.type === 'step_done') return 'finished step "' + (e.detail.step || '') + '" → ' + (e.detail.job || '');
     if (e.type === 'draft_posted') return 'we posted the menu (' + (e.detail.items || 0) + ' items)';
-    if (e.type === 'menu_approved') return 'passed every menu item';
+    if (e.type === 'menu_approved') return 'every menu item looks good to him';
     if (e.type === 'build_queued') return 'native build queued for us';
     if (e.type === 'built') return 'we marked the app up (' + Object.keys(e.detail || {}).filter(function(k){ return e.detail[k]; }).join(', ') + ')';
-    if (e.type === 'review_note') return 'Fail on ' + (e.detail.kind === 'app' ? 'a screen, ' : e.detail.kind === 'uat' ? 'the final test, ' : 'the menu, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
+    if (e.type === 'review_note') return (e.detail.kind === 'uat' ? 'Fail on the final test, ' : e.detail.kind === 'menu' ? 'wants a change on the menu, ' : 'wants a change, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
     if (e.type === 'replied') return 'we replied on "' + (e.detail.item || '') + '": ' + (e.detail.reply || '');
     if (e.type === 'notes') return 'wrote notes' + (e.detail.part ? ' on ' + String(e.detail.part).replace(/_/g, ' ') : '') + ': ' + (e.detail.text || '');
     if (e.type === 'approved') return 'approved the app';
     if (e.type === 'uat_ready') return 'we marked the final test ready';
-    if (e.type === 'uat_fail') return 'Fail on the final test (' + (e.detail.by || '') + '), "' + (e.detail.item || '') + '": ' + (e.detail.note || '');
+    if (e.type === 'uat_fail') return (e.detail.kind === 'qa' ? 'QA fail' : 'Fail on the final test (' + (e.detail.by || '') + ')') + ', "' + (e.detail.item || '') + '": ' + (e.detail.note || '');
     if (e.type === 'uat_passed') return 'final test passed on both sides';
     return e.type;
   }

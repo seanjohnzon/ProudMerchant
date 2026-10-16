@@ -118,16 +118,18 @@ window.Intake = (function(){
       .sort(function(x, y){ return kinds.indexOf(x.kind) - kinds.indexOf(y.kind) || (x.sort || 0) - (y.sort || 0) || String(x.item_id).localeCompare(String(y.item_id)); });
   }
   function slug(t){ return String(t).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40); }
+  function stamp(){ var d = new Date(); return 'Saved ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
   function renderReview(host, acct, step, savingEl, onChange){
-    var kind = step.review, items = listItems(acct, step), state = acct.answers || {}, timers = {}, cards = {};
-    function passed(i){ return i.result === 'pass'; }
-    function count(list){ list = list || items; var ok = list.filter(passed).length, bad = list.filter(function(i){ return i.result === 'fail'; }).length; return { ok: ok, n: list.length, fail: bad }; }
+    var kind = step.review, uat = kind === 'uat', items = listItems(acct, step), state = acct.answers || {}, timers = {}, cards = {};
+    var YES = uat ? 'pass' : 'good', NO = uat ? 'fail' : 'change', yesWord = uat ? 'Pass' : 'Looks good', noWord = uat ? 'Fail' : 'Change';
+    function good(i){ return i.result === YES; }
+    function count(list){ list = list || items; var ok = list.filter(good).length, bad = list.filter(function(i){ return i.result === NO; }).length; return { ok: ok, n: list.length, fail: bad }; }
     function busy(t){ savingEl.className = 'saving'; savingEl.textContent = t; }
-    function saved(){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); paintCats(); if (onChange) onChange(count()); }
-    function failed(err){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; }
-    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', passed(it)); c.card.classList.toggle('fail', it.result === 'fail');
-      c.pass.setAttribute('aria-pressed', String(it.result === 'pass')); c.fail.setAttribute('aria-pressed', String(it.result === 'fail'));
-      c.note.hidden = !(it.result === 'fail' || (it.note || '').trim() || it.reply); }
+    function saved(line){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); if (line){ line.textContent = stamp(); line.className = 'stamp ok'; } paintCats(); if (onChange) onChange(count()); }
+    function failed(err, line){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; if (line){ line.textContent = 'Not saved. Check your connection and press Save.'; line.className = 'stamp err'; } }
+    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', good(it)); c.card.classList.toggle('fail', it.result === NO);
+      c.yes.setAttribute('aria-pressed', String(it.result === YES)); c.no.setAttribute('aria-pressed', String(it.result === NO));
+      c.note.hidden = !(it.result === NO || (it.note || '').trim() || it.reply); }
     function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); paintCats(); }
     function catOf(i){ return kind === 'app' && i.kind === 'menu' ? 'Menu' : (i.section || 'Checks'); }
     var cats = []; items.forEach(function(i){ var c = catOf(i); if (cats.indexOf(c) < 0) cats.push(c); });
@@ -135,36 +137,46 @@ window.Intake = (function(){
     function paintCats(){
       cats.forEach(function(c){
         var mine = items.filter(function(i){ return catOf(i) === c; }), k = count(mine), e = catEls[c];
-        e.chip.textContent = k.ok === k.n ? 'Done' : k.fail ? k.ok + '/' + k.n + ' · ' + k.fail + ' fail' : k.ok ? k.ok + '/' + k.n : k.n;
+        e.chip.textContent = k.ok === k.n ? 'Done' : k.fail ? k.fail + (uat ? ' fail' : (k.fail === 1 ? ' change' : ' changes')) : k.ok ? k.ok + '/' + k.n : k.n;
         e.chip.className = 'chip' + (k.ok === k.n ? ' ok' : k.fail ? ' bad' : ' todo');
         e.box.classList.toggle('ok', k.ok === k.n); e.box.classList.toggle('fail', !!k.fail);
       });
     }
+    // A notes box with its own Save and a "Saved" line.
+    function notesBox(parent, key, part, placeholder, cls){
+      var wrap = el('div', 'nbox');
+      if (state[key.replace('.notes', '.notes_reply')]){ var nr = el('div', 'reply'); nr.appendChild(el('b', '', 'Us: ')); nr.appendChild(document.createTextNode(state[key.replace('.notes', '.notes_reply')])); wrap.appendChild(nr); }
+      var ta = el('textarea'); ta.className = cls; ta.placeholder = placeholder; ta.value = state[key] || ''; wrap.appendChild(ta);
+      var row = el('div', 'srow'); var sb = el('button', 'savebtn', 'Save'); sb.type = 'button'; var line = el('span', 'stamp', state[key] ? 'Saved' : ''); row.appendChild(sb); row.appendChild(line); wrap.appendChild(row);
+      var t; function send(){ clearTimeout(t); busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_section: part, p_text: ta.value }).then(function(){ saved(line); }).catch(function(e){ failed(e, line); }); }
+      ta.addEventListener('input', function(){ state[key] = ta.value; line.textContent = 'Typing…'; line.className = 'stamp'; clearTimeout(t); t = setTimeout(send, 900); });
+      sb.addEventListener('click', send);
+      parent.appendChild(wrap);
+    }
 
-    // One line: where to open it.
-    var pre = kind === 'uat' ? 'uat.' : 'app.', links = [];
-    [['web', kind === 'uat' ? 'Website' : 'Browser'], ['testflight', 'iPhone'], ['store', 'Stores'], ['android', 'Android']].forEach(function(p){
+    var pre = uat ? 'uat.' : 'app.', links = [];
+    [['web', uat ? 'Website' : 'Browser'], ['testflight', 'iPhone'], ['store', 'Stores'], ['android', 'Android']].forEach(function(p){
       var v = (state[pre + p[0]] || '').trim(); if (!v) return;
       if (/^https?:\/\//.test(v)){ var a = el('a', '', p[1]); a.href = v; a.target = '_blank'; a.rel = 'noopener'; links.push(a); }
       else { var sp = el('span', ''); sp.appendChild(el('b', '', p[1] + ': ')); sp.appendChild(document.createTextNode(v)); links.push(sp); }
     });
     var where = el('p', 'where');
     if (links.length){ links.forEach(function(l, n){ if (n) where.appendChild(document.createTextNode(' · ')); where.appendChild(l); }); }
-    else where.textContent = kind === 'uat' ? 'The links come with the email that says the final test is on.' : 'The link comes with the email that says your app is ready.';
+    else where.textContent = uat ? 'The links come with the email that says the final test is on.' : 'The link comes with the email that says your app is ready.';
     host.appendChild(where);
-    host.appendChild(el('p', 'how', kind === 'uat' ? 'Real card, real orders; refund them after. Tap a part, Pass or Fail each line.' : 'Tap a part. Pass or Fail each line; tap a line to see what to look for. Test app, nothing real.'));
+    host.appendChild(el('p', 'how', uat ? 'Real card, real orders; refund them after. Tap a part, Pass or Fail each line.' : 'Tap a part. Each line is how your app works now: Looks good, or Change and tell us what instead. Your own notes under every part.'));
 
     cats.forEach(function(c){
       var mine = items.filter(function(i){ return catOf(i) === c; });
       var box = el('details', 'cat'); var sum = el('summary'); sum.appendChild(el('span', 'name', c)); var chip = el('span', 'chip'); sum.appendChild(chip); box.appendChild(sum);
       var body = el('div', 'cat-body'); box.appendChild(body);
       catEls[c] = { box: box, chip: chip };
-      if (mine.length > 1 && kind !== 'uat'){
-        var all = el('button', 'okb all', 'All pass'); all.type = 'button';
+      if (mine.length > 1 && !uat){
+        var all = el('button', 'okb all', 'All of these look good'); all.type = 'button';
         all.addEventListener('click', function(){
           busy('Saving…');
           var groups = {}; mine.forEach(function(i){ var g = i.kind + '|' + (i.section || ''); groups[g] = groups[g] || i; });
-          Object.keys(groups).reduce(function(pr, g){ return pr.then(function(){ var i = groups[g]; return PM.rpc('save_review_all', { p_kind: i.kind, p_section: i.section || null }).then(applyList); }); }, Promise.resolve()).then(saved).catch(failed);
+          Object.keys(groups).reduce(function(pr, g){ return pr.then(function(){ var i = groups[g]; return PM.rpc('save_review_all', { p_kind: i.kind, p_section: i.section || null }).then(applyList); }); }, Promise.resolve()).then(function(){ saved(); }).catch(function(e){ failed(e); });
         });
         body.appendChild(all);
       }
@@ -173,7 +185,7 @@ window.Intake = (function(){
         if (c === 'Menu' && it.section !== lastSub){ body.appendChild(el('h3', 'sub', it.section)); lastSub = it.section; }
         var card = el('div', 'line');
         var top = el('div', 'top'); var nm = el('button', 'nm', it.name); nm.type = 'button'; top.appendChild(nm);
-        var btns = el('div', 'btns'), pb = el('button', 'okb', 'Pass'), fb = el('button', 'okb failb', 'Fail'); pb.type = 'button'; fb.type = 'button'; btns.appendChild(pb); btns.appendChild(fb); top.appendChild(btns);
+        var btns = el('div', 'btns'), yb = el('button', 'okb', yesWord), nb = el('button', 'okb failb', noWord); yb.type = 'button'; nb.type = 'button'; btns.appendChild(yb); btns.appendChild(nb); top.appendChild(btns);
         card.appendChild(top);
         var det = el('div', 'det'); det.hidden = true;
         String(it.detail || '').split('\n').forEach(function(line){
@@ -181,36 +193,34 @@ window.Intake = (function(){
           if (m){ p.appendChild(el('span', 'k', m[1] + ': ')); p.appendChild(document.createTextNode(m[2])); } else p.textContent = line;
           det.appendChild(p);
         });
-        if (kind === 'uat' && it.t_result){ var tr = el('p', 'd tester'); tr.appendChild(el('b', '', 'Our tester: ' + (it.t_result === 'pass' ? 'Pass' : 'Fail'))); if (it.t_note) tr.appendChild(document.createTextNode(' · ' + it.t_note)); det.appendChild(tr); }
+        if (uat && it.t_result){ var tr = el('p', 'd tester'); tr.appendChild(el('b', '', 'Our tester: ' + (it.t_result === 'pass' ? 'Pass' : 'Fail'))); if (it.t_note) tr.appendChild(document.createTextNode(' · ' + it.t_note)); det.appendChild(tr); }
         card.appendChild(det);
         nm.addEventListener('click', function(){ det.hidden = !det.hidden; });
         var nwrap = el('div', 'nwrap');
         if (it.reply){ var rp = el('div', 'reply'); rp.appendChild(el('b', '', 'Us: ')); rp.appendChild(document.createTextNode(it.reply)); nwrap.appendChild(rp); }
-        var ta = el('textarea'); ta.placeholder = 'What you saw.'; ta.value = it.note || ''; nwrap.appendChild(ta); card.appendChild(nwrap);
-        cards[it.item_id] = { card: card, pass: pb, fail: fb, note: nwrap };
-        function save(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(function(){
-          busy('Saving…'); PM.rpc('save_uat', { p_item: it.item_id, p_result: it.result || '', p_note: ta.value }).then(saved).catch(failed);
-        }, 500); }
-        pb.addEventListener('click', function(){ it.result = it.result === 'pass' ? '' : 'pass'; paintItem(it); save(); });
-        fb.addEventListener('click', function(){ it.result = it.result === 'fail' ? '' : 'fail'; paintItem(it); save(); if (it.result === 'fail') ta.focus(); });
-        ta.addEventListener('input', function(){ it.note = ta.value; save(); });
+        var ta = el('textarea'); ta.placeholder = uat ? 'What happened.' : 'What instead? More, less, different: say it however it comes.'; ta.value = it.note || ''; nwrap.appendChild(ta);
+        var srow = el('div', 'srow'); var sb = el('button', 'savebtn', 'Save'); sb.type = 'button'; var line = el('span', 'stamp', it.note ? 'Saved' : ''); srow.appendChild(sb); srow.appendChild(line); nwrap.appendChild(srow);
+        card.appendChild(nwrap);
+        cards[it.item_id] = { card: card, yes: yb, no: nb, note: nwrap };
+        function send(){ clearTimeout(timers[it.item_id]); busy('Saving…'); PM.rpc('save_uat', { p_item: it.item_id, p_result: it.result || '', p_note: ta.value }).then(function(){ saved(ta.value || it.result === NO ? line : null); }).catch(function(e){ failed(e, line); }); }
+        function later(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(send, 600); }
+        yb.addEventListener('click', function(){ it.result = it.result === YES ? '' : YES; paintItem(it); later(); });
+        nb.addEventListener('click', function(){ it.result = it.result === NO ? '' : NO; paintItem(it); later(); if (it.result === NO) ta.focus(); });
+        ta.addEventListener('input', function(){ it.note = ta.value; line.textContent = 'Typing…'; line.className = 'stamp'; later(); });
+        sb.addEventListener('click', send);
         paintItem(it);
         body.appendChild(card);
       });
-      var sl = slug(c), nk = kind + '.notes.' + sl, rk = kind + '.notes_reply.' + sl;
-      if (state[rk]){ var nr = el('div', 'reply'); nr.appendChild(el('b', '', 'Us: ')); nr.appendChild(document.createTextNode(state[rk])); body.appendChild(nr); }
-      var nta = el('textarea'); nta.className = 'missing part'; nta.placeholder = 'Notes on ' + c.toLowerCase() + ': anything to add, remove or change.'; nta.value = state[nk] || '';
-      var nt; nta.addEventListener('input', function(){ state[nk] = nta.value; clearTimeout(nt); nt = setTimeout(function(){ busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_section: sl, p_text: nta.value }).then(saved).catch(failed); }, 700); });
-      body.appendChild(nta);
+      var sl = slug(c);
+      body.appendChild(el('h3', 'sub', 'Your notes on ' + c.toLowerCase()));
+      notesBox(body, kind + '.notes.' + sl, sl, 'Anything about ' + c.toLowerCase() + ': what to add, remove or change. As you go.', 'missing part');
       host.appendChild(box);
     });
     paintCats();
     var notes = el('details', 'cat open-note'); var ns = el('summary'); ns.appendChild(el('span', 'name', 'Anything else')); notes.appendChild(ns);
-    var nb = el('div', 'cat-body'); notes.appendChild(nb);
-    if (state[kind + '.notes_reply']){ var nr2 = el('div', 'reply'); nr2.appendChild(el('b', '', 'Us: ')); nr2.appendChild(document.createTextNode(state[kind + '.notes_reply'])); nb.appendChild(nr2); }
-    var eta = el('textarea'); eta.className = 'missing notes'; eta.placeholder = 'Whatever the parts above do not cover. Paste your own notes here as they are.'; eta.value = state[kind + '.notes'] || '';
-    var et; eta.addEventListener('input', function(){ state[kind + '.notes'] = eta.value; clearTimeout(et); et = setTimeout(function(){ busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_section: '', p_text: eta.value }).then(saved).catch(failed); }, 700); });
-    nb.appendChild(eta); host.appendChild(notes);
+    var nb2 = el('div', 'cat-body'); notes.appendChild(nb2);
+    notesBox(nb2, kind + '.notes', '', 'Whatever the parts above do not cover. Paste your own notes here as they are.', 'missing notes');
+    host.appendChild(notes);
     return count();
   }
 
@@ -227,7 +237,7 @@ window.Intake = (function(){
     if (step.review){
       var items = listItems(acct, step);
       if (why || !items.length) return { status: 'locked', left: 0, done: 0, total: 0, why: why || step.after };
-      var okd = items.filter(function(i){ return i.result === 'pass'; }).length;
+      var okd = items.filter(function(i){ return i.result === (step.review === 'uat' ? 'pass' : 'good'); }).length;
       return { status: okd === items.length ? 'done' : 'todo', left: items.length - okd, done: okd, total: items.length };
     }
     var done = 0, total = 0, left = 0, pend = false;
