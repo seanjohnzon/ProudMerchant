@@ -55,7 +55,7 @@
       var host = document.getElementById('sections');
       function paintTop(){
         var x = Intake.stepState(acct, st);
-        document.getElementById('progress').textContent = st.review ? (x.done + ' of ' + x.total + (st.review === 'uat' ? ' pass' : ' look good'))
+        document.getElementById('progress').textContent = st.review ? (x.left ? x.left + ' left' : (st.review === 'uat' ? 'All pass' : 'All good'))
           : x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left';
         if (!st.review && st.job && x.status === 'done') document.getElementById('hint').textContent = st.id === 's1' ? 'Done. We are putting your menu into your app; step 3 opens when it is on your phone.' : st.hint || '';
         if (st.review === 'app' && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'app_check' ? 'All good on your side. The TestFlight build is next; your list moves on when it is up.' : 'Approved. Payments and your own accounts are next.';

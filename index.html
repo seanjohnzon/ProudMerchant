@@ -112,10 +112,10 @@
     <form class="demo" id="startForm" novalidate>
       <div class="f"><span class="lab">Kind of business</span>
         <div class="choice" role="group" aria-label="Kind of business" id="kind">
-          <button type="button" data-v="food-truck-v15" aria-pressed="true">Food truck</button>
-          <button type="button" data-v="restaurant-v9" aria-pressed="false">Restaurant</button>
-          <button type="button" data-v="gas-station-v9" aria-pressed="false">Gas station</button>
-          <button type="button" data-v="other-v9" aria-pressed="false">Something else</button>
+          <button type="button" data-v="food-truck-v16" aria-pressed="true">Food truck</button>
+          <button type="button" data-v="restaurant-v10" aria-pressed="false">Restaurant</button>
+          <button type="button" data-v="gas-station-v10" aria-pressed="false">Gas station</button>
+          <button type="button" data-v="other-v10" aria-pressed="false">Something else</button>
         </div></div>
       <div class="f"><label for="bname">Business name</label><input id="bname" type="text" autocomplete="organization" placeholder="As your customers know it" required></div>
       <div class="f"><label for="pname">Your name</label><input id="pname" type="text" autocomplete="name" required></div>
@@ -141,7 +141,7 @@
 <script>
 (function(){
   PM.session().then(function(s){ if (s){ var n = document.getElementById('navLogin'); n.textContent = 'Your list'; n.href = 'account.html'; } });
-  var kind = "food-truck-v15";
+  var kind = "food-truck-v16";
   document.querySelectorAll('#kind button').forEach(function(b){ b.addEventListener('click', function(){ kind = b.dataset.v; document.querySelectorAll('#kind button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var form = document.getElementById('startForm'), msg = document.getElementById('msg'), go = document.getElementById('go');
   form.addEventListener('submit', function(e){

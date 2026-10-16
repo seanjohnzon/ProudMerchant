@@ -127,9 +127,10 @@ window.Intake = (function(){
     function busy(t){ savingEl.className = 'saving'; savingEl.textContent = t; }
     function saved(line){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); if (line){ line.textContent = stamp(); line.className = 'stamp ok'; } paintCats(); if (onChange) onChange(count()); }
     function failed(err, line){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; if (line){ line.textContent = 'Not saved. Check your connection and press Save.'; line.className = 'stamp err'; } }
-    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', good(it)); c.card.classList.toggle('fail', it.result === NO);
+    function paintItem(it){ var c = cards[it.item_id], done = good(it); c.card.classList.toggle('ok', done); c.card.classList.toggle('fail', it.result === NO);
       c.yes.setAttribute('aria-pressed', String(it.result === YES)); c.no.setAttribute('aria-pressed', String(it.result === NO));
-      c.note.hidden = !(it.result === NO || (it.note || '').trim() || it.reply); }
+      c.btns.hidden = done; c.tick.hidden = !done;
+      c.note.hidden = done || !(it.result === NO || (it.note || '').trim() || it.reply); }
     function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); paintCats(); }
     function catOf(i){ return kind === 'app' && i.kind === 'menu' ? 'Menu' : String(i.section || 'Checks').split(' · ')[0]; }
     function subOf(i){ return kind === 'app' && i.kind === 'menu' ? i.section : (String(i.section || '').split(' · ')[1] || ''); }
@@ -140,7 +141,8 @@ window.Intake = (function(){
     function paintCats(){
       cats.forEach(function(c){
         var mine = items.filter(function(i){ return catOf(i) === c; }), k = count(mine), e = catEls[c];
-        e.chip.textContent = k.ok === k.n ? 'Done' : k.fail ? k.fail + (uat ? ' fail' : (k.fail === 1 ? ' change' : ' changes')) : k.ok ? k.ok + '/' + k.n : k.n;
+        var left = k.n - k.ok - k.fail;
+        e.chip.textContent = k.ok === k.n ? 'Done' : (k.fail ? k.fail + (uat ? ' fail' : (k.fail === 1 ? ' change' : ' changes')) + (left ? ' · ' : '') : '') + (left ? left + ' left' : '');
         e.chip.className = 'chip' + (k.ok === k.n ? ' ok' : k.fail ? ' bad' : ' todo');
         e.box.classList.toggle('ok', k.ok === k.n); e.box.classList.toggle('fail', !!k.fail);
       });
@@ -189,6 +191,7 @@ window.Intake = (function(){
         var card = el('div', 'line');
         var top = el('div', 'top'); var nm = el('button', 'nm', it.name); nm.type = 'button'; top.appendChild(nm);
         var btns = el('div', 'btns'), yb = el('button', 'okb', yesWord), nb = el('button', 'okb failb', noWord); yb.type = 'button'; nb.type = 'button'; btns.appendChild(yb); btns.appendChild(nb); top.appendChild(btns);
+        var tick = el('button', 'tick', '✓ ' + yesWord); tick.type = 'button'; tick.title = 'Tap to change your mind'; top.appendChild(tick);
         card.appendChild(top);
         var det = el('div', 'det'); det.hidden = true;
         String(it.detail || '').split('\n').forEach(function(line){
@@ -204,7 +207,8 @@ window.Intake = (function(){
         var ta = el('textarea'); ta.placeholder = uat ? 'What happened.' : 'What instead? More, less, different: say it however it comes.'; ta.value = it.note || ''; nwrap.appendChild(ta);
         var srow = el('div', 'srow'); var sb = el('button', 'savebtn', 'Save'); sb.type = 'button'; var line = el('span', 'stamp', it.note ? 'Saved' : ''); srow.appendChild(sb); srow.appendChild(line); nwrap.appendChild(srow);
         card.appendChild(nwrap);
-        cards[it.item_id] = { card: card, yes: yb, no: nb, note: nwrap };
+        cards[it.item_id] = { card: card, yes: yb, no: nb, note: nwrap, btns: btns, tick: tick };
+        tick.addEventListener('click', function(){ it.result = ''; paintItem(it); later(); });
         function send(){ clearTimeout(timers[it.item_id]); busy('Saving…'); PM.rpc('save_uat', { p_item: it.item_id, p_result: it.result || '', p_note: ta.value }).then(function(){ saved(ta.value || it.result === NO ? line : null); }).catch(function(e){ failed(e, line); }); }
         function later(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(send, 600); }
         yb.addEventListener('click', function(){ it.result = it.result === YES ? '' : YES; paintItem(it); later(); });

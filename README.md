@@ -54,7 +54,7 @@ Supabase project **`proud-merchant`** (ref `ecfscfmmgpefnpjqwbye`, org Sahin LLC
 `team_reply`, `team_notes_reply`, `team_built`, `team_uat_ready`, `team_uat`, `job_done` answer only for team emails. Uploads go to the private `intake` bucket, one
 folder per business.
 
-Templates: `food-truck-v15` (Serdar's), `restaurant-v9`, `gas-station-v9`, `other-v9`; the Start page names them.
+Templates: `food-truck-v16` (Serdar's), `restaurant-v10`, `gas-station-v10`, `other-v10`; the Start page names them.
 Older rows stay for reference. The restaurant / gas station / other ones differ only in the rewards choices
 (points as well as stamps) and one label.
 
