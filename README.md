@@ -10,16 +10,12 @@ Three branches, three environments; code moves up by merge, never by hand:
 | `uat` | uat.proudmerchant.com, its own Supabase project, email + a code (not up yet) | `sit` merged up when a SIT round passes |
 | `main` | proudmerchant.com, production (not up yet) | `uat` merged up on a release |
 
-Hosting: Netlify, one site per environment, each deploying its own branch straight from this repo (`netlify.toml`:
-plain files, no build, pages marked noindex on `sit` and `uat`). The client sites live on Netlify too, so one host, one
-habit. Each environment has its own Supabase project; `pm.js` on each branch names it. Promotion checklist: merge up,
-point `pm.js` at that environment's project, on `main` drop the noindex meta.
-
-| | Netlify site | Branch | Address | DNS at GoDaddy |
-|---|---|---|---|---|
-| SIT | proudmerchant-sit | `sit` | sit.proudmerchant.com | CNAME `sit` → `proudmerchant-sit.netlify.app` |
-| UAT | proudmerchant-uat | `uat` | uat.proudmerchant.com | CNAME `uat` → `proudmerchant-uat.netlify.app` |
-| Production | proudmerchant | `main` | proudmerchant.com, www | A/ALIAS as Netlify shows when the domain is added |
+Hosting: GitHub Pages, free, nothing else. One Pages site per repo, so SIT is this repo's `sit` branch at
+sit.proudmerchant.com (a `CNAME` file on `sit`; at GoDaddy a CNAME record `sit → seanjohnzon.github.io`). When UAT
+and production exist, each gets its own small repo (`ProudMerchant-uat`, `ProudMerchant-live`) that pulls the matching
+branch of this one and publishes it on its own address; those repos carry their own `CNAME`. Each environment has its own
+Supabase project, named in `pm.js` on its branch. Promotion checklist: merge up, point `pm.js` at that environment's
+project, on `main` drop the noindex meta. The server is Supabase; GitHub only hands out the files.
 
 | File | What it is |
 |---|---|
