@@ -50,3 +50,4 @@
 .item.fail{border-left-color:var(--todo);background:var(--card)}
 .okb.failb[aria-pressed="true"]{background:var(--todo);border-color:var(--todo)}
 .item .tester{color:var(--ink);background:var(--tint);border-radius:6px;padding:6px 10px}
+.missing.notes{min-height:120px}

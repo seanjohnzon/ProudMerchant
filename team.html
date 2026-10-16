@@ -91,7 +91,7 @@
         var bar = el('div', 'prog'); var fill = el('i'); fill.style.width = (b.total ? Math.round(100 * b.done / b.total) : 0) + '%'; bar.appendChild(fill); card.appendChild(bar);
         card.appendChild(el('p', 'meta', [b.kind, b.contact, b.phone, b.email, 'started ' + when(b.started), b.last_answer ? 'last answer ' + when(b.last_answer) : ''].filter(Boolean).join(' · ')));
         var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', STAGE[b.stage] || b.stage));
-        stage.appendChild(document.createTextNode(' · menu draft ' + b.menu.ok + '/' + b.menu.n + ' right · app ' + b.app.ok + '/' + b.app.n + ' look right' + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
+        stage.appendChild(document.createTextNode(' · menu draft ' + b.menu.ok + '/' + b.menu.n + ' right · app ' + b.app.ok + '/' + b.app.n + ' pass' + (b.uat && b.uat.n ? ' · final test: owner ' + b.uat.owner_pass + '/' + b.uat.n + ' pass' + (b.uat.owner_fail ? ', ' + b.uat.owner_fail + ' fail' : '') + ' · tester ' + b.uat.tester_pass + '/' + b.uat.n + ' pass' + (b.uat.tester_fail ? ', ' + b.uat.tester_fail + ' fail' : '') : '')));
         card.appendChild(stage);
         var files = el('div', 'files'); card.appendChild(files);
         PM.listFiles(b.id).then(function(folders){ (folders || []).forEach(function(fo){ PM.listFiles(b.id + '/' + fo.name).then(function(fs){ (fs || []).forEach(function(f){
@@ -104,6 +104,16 @@
           var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', (n.kind === 'menu' ? 'Menu draft · ' : n.kind === 'uat' ? 'Final test · ' : 'App · ') + n.name + ': ')); q.appendChild(document.createTextNode(n.note)); box.appendChild(q);
           var ta = el('textarea'); ta.placeholder = 'Our answer, shown under the item. For a menu note: fix the draft here too. For an app note: fix, push the update, then "Fixed, reopen the app."'; box.appendChild(ta);
           var btn = el('button', '', 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_reply', { p_business: b.id, p_item: n.item, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
+          box.appendChild(btn); card.appendChild(box);
+        });
+
+        // His own notes under a list, with our reply.
+        ['menu', 'app', 'uat'].forEach(function(k){
+          var txt = b.links[k + '.notes']; if (!txt) return;
+          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', 'His notes on ' + (k === 'menu' ? 'the menu draft' : k === 'app' ? 'the test app' : 'the final test') + ': ')); q.appendChild(document.createTextNode(txt)); box.appendChild(q);
+          if (b.links[k + '.notes_reply']) box.appendChild(el('span', 'meta', 'Our reply: ' + b.links[k + '.notes_reply']));
+          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under his notes box.'; box.appendChild(ta);
+          var btn = el('button', '', 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_notes_reply', { p_business: b.id, p_kind: k, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
           box.appendChild(btn); card.appendChild(box);
         });
 
@@ -191,13 +201,13 @@
   function emailFor(b){
     var first = (b.contact || '').split(' ')[0] || 'there', login = SITE + 'login.html';
     if (b.stage === 'menu_check') return 'Hi ' + first + ',\n\nYour menu draft is ready to check: ' + login + ' (your email and password), then step 3. Each item: Right, or write what is wrong under it. About ten minutes. Anything missing goes in the box at the bottom.\n\nWe build the test app from what you approve there.\n\nCihan, Proud Merchant';
-    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour test app is ready.' + (b.links.testflight ? '\n\niPhone: ' + b.links.testflight : '') + (b.links.web ? '\nBrowser: ' + b.links.web : '') + (b.links.android ? '\nAndroid: ' + b.links.android : '') + '\n\nThen ' + login + ', step 4: go through it as a customer would, screen by screen, and tick Looks right or write what is off. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
+    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour test app is ready.' + (b.links.testflight ? '\n\niPhone: ' + b.links.testflight : '') + (b.links.web ? '\nBrowser: ' + b.links.web : '') + (b.links.android ? '\nAndroid: ' + b.links.android : '') + '\n\nThen ' + login + ', step 4: 25 checks in the order a customer meets them, each one Pass or Fail with what you saw; anything else goes in the notes box at the bottom, pasted as you have it. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
     if (b.stage === 'approved') return 'Hi ' + first + ',\n\nYour app is approved. Next on your list: ' + login + ' — step 5 (your Square or Stripe) and step 6 (your web address, D-U-N-S, Apple and Google). Those last ones cost a little and take days on their side, so the sooner they start the better.\n\nCihan, Proud Merchant';
     if (b.stage === 'uat') return 'Hi ' + first + ',\n\nThe real thing is up' + (b.links['uat.web'] ? ': ' + b.links['uat.web'] : '') + (b.links['uat.testflight'] ? '\niPhone: ' + b.links['uat.testflight'] : '') + (b.links['uat.android'] ? '\nAndroid: ' + b.links['uat.android'] : '') + '\n\nStep 7 at ' + login + ' is the final test: 16 checks, real card, real orders (refund them after). Each one Pass, or Fail with what happened. Our tester does the same list; when both pass, we launch.\n\nCihan, Proud Merchant';
     if (b.stage === 'uat_passed') return 'Hi ' + first + ',\n\nThe final test passed on both sides. Step 8 is launch: the photos, the QR sticker, twenty minutes with your staff, and the day you switch to Open.\n\nCihan, Proud Merchant';
     return 'Hi ' + first + ',\n\nYour setup list is at ' + login + ' (your email and password). Steps 1 and 2 are yours; we draft your menu as soon as step 1 is in.\n\nCihan, Proud Merchant';
   }
-  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 's3' ? 'the approved draft' : sec === 'menu_note' ? 'a note on the menu draft' : sec === 'app_note' ? 'a note on the app' : sec === 'uat_note' ? 'a Fail on the final test' : '"' + sec + '"'; }
+  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 's3' ? 'the approved draft' : sec === 'menu_note' ? 'a note on the menu draft' : sec === 'app_note' ? 'a Fail on the test app' : sec === 'uat_note' ? 'a Fail on the final test' : /_notes$/.test(sec) ? 'his notes box' : '"' + sec + '"'; }
   function plain(e){
     if (e.type === 'started') return 'started an account';
     if (e.type === 'task_done') return 'finished "' + (e.detail.section || '') + '" → ' + (e.detail.job || '');
@@ -209,6 +219,7 @@
     if (e.type === 'built') return 'we marked the test app built';
     if (e.type === 'review_note') return 'note on ' + (e.detail.kind === 'app' ? 'the app, ' : 'the draft, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
     if (e.type === 'replied') return 'we replied on "' + (e.detail.item || '') + '": ' + (e.detail.reply || '');
+    if (e.type === 'notes') return 'wrote notes on ' + (e.detail.kind === 'app' ? 'the test app' : e.detail.kind === 'uat' ? 'the final test' : 'the menu draft') + ': ' + (e.detail.text || '');
     if (e.type === 'approved') return 'approved the app';
     if (e.type === 'uat_ready') return 'we marked the final test ready';
     if (e.type === 'uat_fail') return 'Fail on the final test (' + (e.detail.by || '') + '), "' + (e.detail.item || '') + '": ' + (e.detail.note || '');

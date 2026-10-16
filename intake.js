@@ -113,14 +113,15 @@ window.Intake = (function(){
   function renderReview(host, acct, step, savingEl, onChange){
     var kind = step.review, items = (acct.review || []).filter(function(i){ return i.kind === kind; }), state = acct.answers || {}, timers = {};
     var okWord = kind === 'menu' ? 'Right' : 'Looks right', cards = {};
-    function passed(i){ return kind === 'uat' ? i.result === 'pass' : !!i.ok; }
+    var pf = kind === 'app' || kind === 'uat';
+    function passed(i){ return pf ? i.result === 'pass' : !!i.ok; }
     function count(){ var ok = items.filter(passed).length; return { ok: ok, n: items.length }; }
     function busy(t){ savingEl.className = 'saving'; savingEl.textContent = t; }
     function saved(){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); if (onChange) onChange(count()); }
     function failed(err){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; }
-    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', passed(it)); c.card.classList.toggle('fail', kind === 'uat' && it.result === 'fail');
+    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', passed(it)); c.card.classList.toggle('fail', pf && it.result === 'fail');
       if (c.okb) c.okb.setAttribute('aria-pressed', String(!!it.ok)); if (c.pass){ c.pass.setAttribute('aria-pressed', String(it.result === 'pass')); c.fail.setAttribute('aria-pressed', String(it.result === 'fail')); } }
-    function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; paintItem(it); } }); }); }
+    function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); }
     if (kind === 'app' || kind === 'uat'){
       var where = el('section', 'sec where'); where.appendChild(el('h2', '', kind === 'uat' ? 'The real thing' : 'Where to open it'));
       var any = false, pre = kind === 'uat' ? 'uat.' : 'app.';
@@ -131,7 +132,7 @@ window.Intake = (function(){
         where.appendChild(row);
       });
       if (!any) where.appendChild(el('p', 'd', kind === 'uat' ? 'The links come with the email that says the final test is on.' : 'The links come with the email that says your test app is ready.'));
-      where.appendChild(el('p', 'note', kind === 'uat' ? 'Real card, real orders (refund them after). Each check: Pass, or Fail with what happened. Our tester does the same list; both have to pass before launch.' : 'Go through it in this order, as a customer would. Anything off: write it under the screen. We fix it and reply here; then reopen the app and check again.'));
+      where.appendChild(el('p', 'note', kind === 'uat' ? 'Real card, real orders (refund them after). Each check: Pass, or Fail with what happened. Our tester does the same list; both have to pass before launch.' : 'Test app, test orders, nothing real. Account → Test controls sets the stamp card and resets the free drink between checks. Each one: Pass, or Fail with what you saw. We fix it and reply here; then reopen the app and check again.'));
       host.appendChild(where);
     }
     var sections = []; items.forEach(function(i){ var s = i.section || ''; if (sections.indexOf(s) < 0) sections.push(s); });
@@ -140,7 +141,7 @@ window.Intake = (function(){
       var sec = el('section', 'sec list');
       var head = el('div', 'sec-head'); head.appendChild(el('h2', '', sname || (kind === 'menu' ? 'Your menu' : 'Your app')));
       if (mine.length > 1 && kind !== 'uat'){
-        var all = el('button', 'okb all', kind === 'menu' ? 'All of these are right' : 'All of these look right'); all.type = 'button';
+        var all = el('button', 'okb all', kind === 'menu' ? 'All of these are right' : 'All of these pass'); all.type = 'button';
         all.addEventListener('click', function(){ busy('Saving…'); PM.rpc('save_review_all', { p_kind: kind, p_section: sname || null }).then(function(list){ applyList(list); saved(); }).catch(failed); });
         head.appendChild(all);
       }
@@ -153,16 +154,16 @@ window.Intake = (function(){
           card.appendChild(p);
         });
         if (it.reply){ var rp = el('div', 'reply'); rp.appendChild(el('b', '', 'Us: ')); rp.appendChild(document.createTextNode(it.reply)); card.appendChild(rp); }
-        if (kind === 'uat' && it.t_result){ var tr = el('p', 'd tester'); tr.appendChild(el('b', '', 'Our tester: ' + (it.t_result === 'pass' ? 'Pass' : 'Fail'))); if (it.t_note) tr.appendChild(document.createTextNode(' · ' + it.t_note)); card.appendChild(tr); }
+        if (pf && it.t_result){ var tr = el('p', 'd tester'); tr.appendChild(el('b', '', 'Our tester: ' + (it.t_result === 'pass' ? 'Pass' : 'Fail'))); if (it.t_note) tr.appendChild(document.createTextNode(' · ' + it.t_note)); card.appendChild(tr); }
         var row = el('div', 'row'), okb = null, pb = null, fb = null;
-        if (kind === 'uat'){ pb = el('button', 'okb', 'Pass'); pb.type = 'button'; fb = el('button', 'okb failb', 'Fail'); fb.type = 'button'; row.appendChild(pb); row.appendChild(fb); }
+        if (pf){ pb = el('button', 'okb', 'Pass'); pb.type = 'button'; fb = el('button', 'okb failb', 'Fail'); fb.type = 'button'; row.appendChild(pb); row.appendChild(fb); }
         else { okb = el('button', 'okb', okWord); okb.type = 'button'; okb.setAttribute('aria-pressed', String(!!it.ok)); row.appendChild(okb); }
         card.appendChild(row);
-        var ta = el('textarea'); ta.placeholder = kind === 'menu' ? 'Anything wrong or missing here? Write it.' : kind === 'uat' ? 'What happened, if it failed.' : 'Anything off on this screen? Write it.'; ta.value = it.note || ''; card.appendChild(ta);
+        var ta = el('textarea'); ta.placeholder = kind === 'menu' ? 'Anything wrong or missing here? Write it.' : 'What you saw, if it failed.'; ta.value = it.note || ''; card.appendChild(ta);
         cards[it.item_id] = { card: card, okb: okb, pass: pb, fail: fb };
         function save(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(function(){
           busy('Saving…');
-          (kind === 'uat' ? PM.rpc('save_uat', { p_item: it.item_id, p_result: it.result || '', p_note: ta.value }) : PM.rpc('save_review', { p_item: it.item_id, p_ok: it.ok, p_note: ta.value })).then(saved).catch(failed);
+          (pf ? PM.rpc('save_uat', { p_item: it.item_id, p_result: it.result || '', p_note: ta.value }) : PM.rpc('save_review', { p_item: it.item_id, p_ok: it.ok, p_note: ta.value })).then(saved).catch(failed);
         }, 500); }
         if (okb) okb.addEventListener('click', function(){ it.ok = !it.ok; paintItem(it); save(); });
         if (pb){ pb.addEventListener('click', function(){ it.result = it.result === 'pass' ? '' : 'pass'; paintItem(it); save(); }); fb.addEventListener('click', function(){ it.result = it.result === 'fail' ? '' : 'fail'; paintItem(it); save(); if (it.result === 'fail') ta.focus(); }); }
@@ -172,14 +173,14 @@ window.Intake = (function(){
       });
       host.appendChild(sec);
     });
-    if (kind === 'menu'){
-      var miss = el('section', 'sec'); miss.appendChild(el('h2', '', 'Something missing?'));
-      miss.appendChild(el('p', 'hint', 'An item, a size, a sauce, a price we did not catch. Write it here and we add it to the draft.'));
-      var mta = el('textarea'); mta.className = 'missing'; mta.placeholder = 'For example: a kids meal, $6, with a drink'; mta.value = state['menu.missing'] || '';
-      var mt;
-      mta.addEventListener('input', function(){ state['menu.missing'] = mta.value; clearTimeout(mt); mt = setTimeout(function(){ busy('Saving…'); PM.rpc('save_answer', { p_key: 'menu.missing', p_value: mta.value }).then(saved).catch(failed); }, 600); });
-      miss.appendChild(mta); host.appendChild(miss);
-    }
+    var notes = el('section', 'sec'); notes.appendChild(el('h2', '', kind === 'menu' ? 'Something missing?' : 'Your notes'));
+    notes.appendChild(el('p', 'hint', kind === 'menu' ? 'An item, a size, a sauce, a price we did not catch. Write it here and we add it to the draft.'
+      : 'Anything to add, remove or change that the list above does not cover. Paste your own notes here as they are; we sort them.'));
+    if (state[kind + '.notes_reply']){ var nr = el('div', 'reply'); nr.appendChild(el('b', '', 'Us: ')); nr.appendChild(document.createTextNode(state[kind + '.notes_reply'])); notes.appendChild(nr); }
+    var nta = el('textarea'); nta.className = 'missing notes'; nta.placeholder = kind === 'menu' ? 'For example: a kids meal, $6, with a drink' : 'For example: the order screen should show the pickup time; remove the TikTok button; add a Diet Dr Pepper'; nta.value = state[kind + '.notes'] || '';
+    var nt;
+    nta.addEventListener('input', function(){ state[kind + '.notes'] = nta.value; clearTimeout(nt); nt = setTimeout(function(){ busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_text: nta.value }).then(saved).catch(failed); }, 700); });
+    notes.appendChild(nta); host.appendChild(notes);
     return count();
   }
 
@@ -196,7 +197,7 @@ window.Intake = (function(){
     if (step.review){
       var items = (acct.review || []).filter(function(i){ return i.kind === step.review; });
       if (why || !items.length) return { status: 'locked', left: 0, done: 0, total: 0, why: why || step.after };
-      var okd = items.filter(function(i){ return step.review === 'uat' ? i.result === 'pass' : i.ok; }).length;
+      var okd = items.filter(function(i){ return step.review === 'app' || step.review === 'uat' ? i.result === 'pass' : i.ok; }).length;
       return { status: okd === items.length ? 'done' : 'todo', left: items.length - okd, done: okd, total: items.length };
     }
     var done = 0, total = 0, left = 0, pend = false;
