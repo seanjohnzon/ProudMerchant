@@ -49,7 +49,7 @@
       var st = steps[i], bySec = {}; (acct.template.sections || []).forEach(function(x){ bySec[x.id] = x; });
       document.title = st.title + ' · ' + acct.name;
       document.getElementById('no').textContent = (i + 1) + '.'; document.getElementById('name').textContent = st.title;
-      document.getElementById('hint').textContent = st.hint || '';
+      document.getElementById('hint').textContent = st.review ? '' : (st.hint || '');
       var x0 = Intake.stepState(acct, st);
       if (x0.status === 'locked'){ empty.hidden = false; empty.textContent = Intake.lockText(x0.why); nextRow(); return; }
       var host = document.getElementById('sections');

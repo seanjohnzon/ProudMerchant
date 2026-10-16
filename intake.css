@@ -53,16 +53,29 @@
 .missing.notes{min-height:120px}
 .missing.part{min-height:54px;font-size:14px;background:var(--card)}
 
-/* The check lists fold into parts: tap a part to open it. */
-.cat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:0}
+/* The check lists fold into parts: every part shut on entry, tap to open; one line per check. */
+.where{margin:0;font-size:15px} .where a{font-weight:600}
+.how{margin:0;color:var(--ink2);font-size:14px}
+.cat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:10px;padding:0}
 .cat.ok{border-left-color:var(--done)} .cat.fail{border-left-color:var(--todo)}
 .cat summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;cursor:pointer;list-style:none;font-weight:800;font-size:19px;letter-spacing:-.01em}
 .cat summary::-webkit-details-marker{display:none}
 .cat summary::before{content:'▸';color:var(--ink3);font-size:15px;margin-right:2px}
 .cat[open] summary::before{content:'▾'}
 .cat summary .name{flex:1;min-width:0}
-.cat-body{display:grid;gap:10px;padding:0 15px 15px}
-.cat .sub{font-size:14px;font-weight:800;color:var(--ink2);margin:6px 0 0;letter-spacing:.02em;text-transform:uppercase}
+.cat-body{display:grid;gap:8px;padding:0 15px 15px}
+.cat .sub{font-size:12.5px;font-weight:800;color:var(--ink3);margin:8px 0 0;letter-spacing:.06em;text-transform:uppercase}
 .chip.bad{background:var(--todo);color:#fff}
+.chip.todo{background:var(--tint);color:var(--ink2)}
 .cat.open-note{border-left-color:var(--brass)}
-.cat .okb.all{justify-self:start}
+.cat .okb.all{justify-self:start;margin-top:4px}
+.line{border-top:1px solid var(--line);padding-top:8px;display:grid;gap:6px}
+.line .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.line .nm{flex:1;min-width:0;text-align:left;background:none;border:0;padding:4px 0;font:inherit;font-size:16px;font-weight:600;color:var(--ink);cursor:pointer}
+.line.ok .nm{color:var(--done)} .line.fail .nm{color:var(--todo)}
+.line .btns{display:flex;gap:6px;flex:none}
+.line .okb{font-size:14px;padding:5px 12px}
+.line .det{display:grid;gap:4px} .line .det .d{color:var(--ink2);font-size:14.5px;margin:0} .line .det .k{color:var(--ink);font-weight:600}
+.line .nwrap{display:grid;gap:6px}
+.line textarea{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;min-height:44px;resize:vertical}
+.missing.part{min-height:48px;font-size:14px;background:var(--paper);margin-top:6px}

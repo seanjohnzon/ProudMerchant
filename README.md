@@ -54,7 +54,7 @@ kind `app` = the checks; `reply`), `team`. Browsers reach it only through functi
 `team_reply`, `team_notes_reply`, `team_built`, `team_uat_ready`, `team_uat`, `job_done` answer only for team emails. Uploads go to the private `intake` bucket, one
 folder per business.
 
-Templates: `food-truck-v12` (Serdar's), `restaurant-v6`, `gas-station-v6`, `other-v6`; the Start page names them.
+Templates: `food-truck-v13` (Serdar's), `restaurant-v7`, `gas-station-v7`, `other-v7`; the Start page names them.
 Older rows stay for reference. The restaurant / gas station / other ones differ only in the rewards choices
 (points as well as stamps) and one label.
 
