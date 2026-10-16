@@ -2,14 +2,17 @@
 
 The company's own site: the landing page, Start, and every customer's setup list. Client apps
 (Buns & Patties and the ones after it) live in their own repos; this is ours. Plain files, no build;
-Two environments, two branches:
+Three branches, three environments; code moves up by merge, never by hand:
 
-| | Branch | Address | Host | Database | Logins |
-|---|---|---|---|---|---|
-| **SIT** (now) | `sit` | sit.proudmerchant.com | GitHub Pages, from the `sit` branch (`CNAME` in the repo; at GoDaddy a CNAME record `sit → seanjohnzon.github.io`) | Supabase `proud-merchant` (ref `ecfscfmmgpefnpjqwbye`), real data | email + password, no codes |
-| **UAT** (later) | `main` | proudmerchant.com | Netlify from `main` (GitHub Pages serves one branch per repo, so the second environment goes on a second host; `netlify.toml` is already here) | a second Supabase project, `pm.js` on `main` points at it | email + a code |
+| Branch | Environment | Commits |
+|---|---|---|
+| `sit` | **sit.proudmerchant.com**, SIT database (Supabase `proud-merchant`, ref `ecfscfmmgpefnpjqwbye`, real data, email + password) | daily work |
+| `uat` | uat.proudmerchant.com, its own Supabase project, email + a code (not up yet) | `sit` merged up when a SIT round passes |
+| `main` | proudmerchant.com, production (not up yet) | `uat` merged up on a release |
 
-Work lands on `sit`; `main` moves only on a release. Pushing `sit` publishes within a minute or two.
+Hosting: SIT on GitHub Pages from `sit` (`CNAME` in the repo; a CNAME record `sit → seanjohnzon.github.io` at GoDaddy).
+UAT and production on Netlify (one branch each; `netlify.toml` is here), where the client sites go too. The site is plain
+files, so a host swap is a settings change, never a code change. `pm.js` on each branch names that environment's database.
 
 | File | What it is |
 |---|---|
