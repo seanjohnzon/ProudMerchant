@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="pm.css">
 <link rel="stylesheet" href="intake.css">
 <style>
-  /* One step: only this step's boxes, saving as he types, Next step at the bottom. */
+  /* One step: its boxes saving as he types, or one of the two check lists. Next step at the bottom. */
   body{font-size:16px;line-height:1.45;padding-block:0 60px}
   .narrow{display:grid;gap:14px}
   header.bar{padding-block:14px}
@@ -45,19 +45,35 @@
     return PM.rpc('get_account').then(function(acct){
       if (!acct){ location.replace('account.html'); return; }
       var steps = acct.template.steps || [], i = steps.findIndex(function(x){ return x.id === want; });
-      if (i < 0 || steps[i].review){ location.replace('account.html'); return; }
+      if (i < 0){ location.replace('account.html'); return; }
       var st = steps[i], bySec = {}; (acct.template.sections || []).forEach(function(x){ bySec[x.id] = x; });
       document.title = st.title + ' · ' + acct.name;
       document.getElementById('no').textContent = (i + 1) + '.'; document.getElementById('name').textContent = st.title;
       document.getElementById('hint').textContent = st.hint || '';
-      var secs = st.sections.map(function(id){ return bySec[id]; }).filter(Boolean);
-      function paintTop(){ var x = Intake.stepState(acct, st); document.getElementById('progress').textContent = x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left';
-        if (st.job && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'setup' || acct.stage === 'building' ? 'Done. We are building your app from this.' : 'Done. We built your app from this.'; }
-      Intake.render(document.getElementById('sections'), acct, secs, saving, paintTop); paintTop();
-      var row = document.getElementById('nextrow'), next = steps[i + 1];
-      while (next && next.review && (acct.stage === 'setup' || acct.stage === 'building')) next = steps[steps.indexOf(next) + 1];
-      if (next){ var b = el('a', 'btn brass', 'Next: ' + (steps.indexOf(next) + 1) + '. ' + next.title); b.href = next.review ? 'review.html' : 'step.html?s=' + next.id; row.appendChild(b); }
-      var back = el('a', 'crumb', 'Back to your setup'); back.href = 'account.html'; row.appendChild(back);
+      var x0 = Intake.stepState(acct, st);
+      if (x0.status === 'locked'){ empty.hidden = false; empty.textContent = Intake.lockText(x0.why); nextRow(); return; }
+      var host = document.getElementById('sections');
+      function paintTop(){
+        var x = Intake.stepState(acct, st);
+        document.getElementById('progress').textContent = st.review ? (x.done + ' of ' + x.total + (st.review === 'menu' ? ' right' : ' look right'))
+          : x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.left + ' left';
+        if (!st.review && st.job && x.status === 'done') document.getElementById('hint').textContent = st.id === 's1' ? 'Done. We are drafting your menu from this; step 3 opens when it is ready.' : st.hint || '';
+        if (st.review === 'menu' && x.status === 'done') document.getElementById('hint').textContent = acct.stage === 'building' ? 'All right. We are building your test app from this; step 4 opens when it is on your phone.' : 'All right. Your app is built from this.';
+        if (st.review === 'app' && x.status === 'done') document.getElementById('hint').textContent = 'Approved. Payments and your own accounts are next.';
+      }
+      if (st.review){
+        Intake.renderReview(host, acct, st, saving, function(){ PM.rpc('get_account').then(function(a){ acct.stage = a.stage; acct.review = a.review; paintTop(); }).catch(function(){ paintTop(); }); });
+      } else {
+        var secs = st.sections.map(function(id){ return bySec[id]; }).filter(Boolean);
+        Intake.render(host, acct, secs, saving, paintTop);
+      }
+      paintTop(); nextRow();
+      function nextRow(){
+        var row = document.getElementById('nextrow'), j = i + 1, next = null;
+        while (j < steps.length){ if (Intake.stepState(acct, steps[j]).status !== 'locked'){ next = steps[j]; break; } j++; }
+        if (next){ var b = el('a', 'btn brass', 'Next: ' + (steps.indexOf(next) + 1) + '. ' + next.title); b.href = 'step.html?s=' + next.id; row.appendChild(b); }
+        var back = el('a', 'crumb', 'Back to your setup'); back.href = 'account.html'; row.appendChild(back);
+      }
     });
   }).catch(function(err){ saving.className = 'saving err'; saving.textContent = err.message; });
 })();

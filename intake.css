@@ -34,3 +34,16 @@
 .empty{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 16px}
 
 .preview{max-width:220px;max-height:220px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px;justify-self:start}
+
+/* The check lists: the menu draft (step 3) and the app (step 4). */
+.sec.list{gap:10px}
+.item{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:12px 14px;display:grid;gap:6px}
+.item.ok{border-left-color:var(--done)}
+.item b{font-size:17px} .item .d{color:var(--ink2);font-size:14.5px;margin:0} .item .d .k{color:var(--ink);font-weight:600}
+.item textarea,.missing{font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%;min-height:44px;resize:vertical}
+.item .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.okb{font:inherit;font-size:15px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+.okb[aria-pressed="true"]{background:var(--done);border-color:var(--done);color:#fff;font-weight:600}
+.okb.all{font-size:13.5px;padding:4px 11px;color:var(--ink2)}
+.reply{background:var(--tint);border-left:4px solid var(--brass);border-radius:6px;padding:8px 10px;font-size:14.5px}
+.where .d{margin:0;font-size:15px} .where .d b{color:var(--ink)}

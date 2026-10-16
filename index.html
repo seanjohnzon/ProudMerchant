@@ -98,10 +98,10 @@
     <p class="sub">A short list in your account. You fill in what only you can, and we build everything else.</p>
     <ol class="steps">
       <li><div><b>Start</b><p>Pick your kind of business, give us its name, your name, your email and mobile. Your list is ready before you finish your coffee.</p><span class="who">You, two minutes</span></div></li>
-      <li><div><b>Fill in your list</b><p>Your legal name, your web address, your menu, where you park. Each box saves as you type. The slow ones, like Apple, start on day one.</p><span class="who">You, over a few days</span></div></li>
-      <li><div><b>We build</b><p>Your website, your app and your rewards, from what you gave us. We say what we are doing and when.</p><span class="who">Us</span></div></li>
-      <li><div><b>You look it over</b><p>A test app on your own phone. You order, you check, you say go.</p><span class="who">You</span></div></li>
-      <li><div><b>Live</b><p>Your website goes live first, with the QR sticker. The app follows when Apple and Google approve it.</p><span class="who">Us</span></div></li>
+      <li><div><b>Your menu, your logo, your hours</b><p>Three files and a few boxes: hours, phone, your Google Maps listing, your socials, your rewards. Each saves as you type.</p><span class="who">You, in a sitting</span></div></li>
+      <li><div><b>We draft your menu, you check it</b><p>Item by item, in words: the price, what it comes with, what a customer chooses, the extras. Right, or a note. Nothing gets built from a guess.</p><span class="who">Us, then you</span></div></li>
+      <li><div><b>We build, you try it on your phone</b><p>The test app on your own phone and in your browser. You order, you check each screen, you say go. A note comes back fixed.</p><span class="who">Us, then you</span></div></li>
+      <li><div><b>Payments, your accounts, live</b><p>Your own Square or Stripe takes the orders. Apple and Google only once you have approved the app. Your website goes live first, the app when the stores approve it.</p><span class="who">You and us</span></div></li>
     </ol>
   </section>
 
@@ -111,10 +111,10 @@
     <form class="demo" id="startForm" novalidate>
       <div class="f"><span class="lab">Kind of business</span>
         <div class="choice" role="group" aria-label="Kind of business" id="kind">
-          <button type="button" data-v="food-truck-v8-p" aria-pressed="true">Food truck</button>
-          <button type="button" data-v="restaurant-v2-p" aria-pressed="false">Restaurant</button>
-          <button type="button" data-v="gas-station-v2-p" aria-pressed="false">Gas station</button>
-          <button type="button" data-v="other-v2-p" aria-pressed="false">Something else</button>
+          <button type="button" data-v="food-truck-v9" aria-pressed="true">Food truck</button>
+          <button type="button" data-v="restaurant-v3" aria-pressed="false">Restaurant</button>
+          <button type="button" data-v="gas-station-v3" aria-pressed="false">Gas station</button>
+          <button type="button" data-v="other-v3" aria-pressed="false">Something else</button>
         </div></div>
       <div class="f"><label for="bname">Business name</label><input id="bname" type="text" autocomplete="organization" placeholder="As your customers know it" required></div>
       <div class="f"><label for="pname">Your name</label><input id="pname" type="text" autocomplete="name" required></div>
@@ -140,7 +140,7 @@
 <script>
 (function(){
   PM.session().then(function(s){ if (s){ var n = document.getElementById('navLogin'); n.textContent = 'Your list'; n.href = 'account.html'; } });
-  var kind = "food-truck-v8-p";
+  var kind = "food-truck-v9";
   document.querySelectorAll('#kind button').forEach(function(b){ b.addEventListener('click', function(){ kind = b.dataset.v; document.querySelectorAll('#kind button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); }); }); });
   var form = document.getElementById('startForm'), msg = document.getElementById('msg'), go = document.getElementById('go');
   form.addEventListener('submit', function(e){

@@ -9,13 +9,14 @@
 <link rel="stylesheet" href="pm.css">
 <link rel="stylesheet" href="intake.css">
 <style>
-  /* The profile: how far along he is, six steps, one Continue button. */
+  /* The profile: where things stand, seven steps, one Continue button. */
   body{font-size:16px;line-height:1.45;padding-block:0 60px}
   .narrow{display:grid;gap:14px}
   header.bar{padding-block:14px}
   h1{font-size:clamp(32px,8vw,46px);margin:6px 0 0}
   .bar2{height:10px;background:var(--tint);border-radius:999px;overflow:hidden}
   .bar2 i{display:block;height:100%;background:var(--done);transition:width .4s}
+  .now{margin:0;font-weight:600;color:var(--brass)}
   .steps{display:grid;gap:10px}
   .step{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--ink)}
   .step.ok{border-left-color:var(--done)} .step.wait{border-left-color:var(--brass)} .step.lock{border-left-color:var(--line);color:var(--ink3)}
@@ -37,6 +38,7 @@
   </header>
   <div class="top"><h1 id="title">Your setup</h1><span class="progress" id="progress"></span></div>
   <div class="bar2" id="bar" hidden><i id="fill" style="width:0"></i></div>
+  <p class="now" id="now"></p>
   <p class="saving" id="saving"></p>
   <div class="empty" id="empty" hidden></div>
   <div class="steps" id="steps"></div>
@@ -68,27 +70,29 @@
   function build(acct){
     document.title = acct.name + ' · Proud Merchant';
     document.getElementById('title').textContent = acct.name;
-    var steps = acct.template.steps || [], host = document.getElementById('steps'), first = null, doneSteps = 0;
+    document.getElementById('now').textContent = Intake.stageLine(acct);
+    var steps = acct.template.steps || [], host = document.getElementById('steps'), first = null, pend = null, doneSteps = 0;
     steps.forEach(function(st, i){
-      var x = Intake.stepState(acct, st);
-      var a = el('a', 'step ' + (x.status === 'done' ? 'ok' : x.status === 'pending' ? 'wait' : x.status === 'locked' ? 'lock' : ''));
-      a.href = st.review ? 'review.html' : 'step.html?s=' + st.id;
-      if (x.status === 'locked'){ a.removeAttribute('href'); }
+      var x = Intake.stepState(acct, st), locked = x.status === 'locked';
+      var a = el('a', 'step ' + (x.status === 'done' ? 'ok' : x.status === 'pending' ? 'wait' : locked ? 'lock' : ''));
+      if (!locked) a.href = 'step.html?s=' + st.id;
       a.appendChild(el('span', 'n', String(i + 1)));
       var mid = el('div'); mid.appendChild(el('b', '', st.title));
-      mid.appendChild(el('small', '', x.status === 'locked' ? (acct.stage === 'building' ? 'We are building. You get an email when it is ready.' : 'Opens after we build your app.') : (st.hint || '')));
+      mid.appendChild(el('small', '', locked ? Intake.lockText(x.why) : (st.hint || '')));
       a.appendChild(mid);
-      var chip = el('span', 'chip' + (x.status === 'done' ? ' ok' : x.status === 'pending' ? ' wait' : x.status === 'locked' ? ' lock' : ''),
-        x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : x.status === 'locked' ? 'Not yet' : (st.review ? x.left + ' to check' : x.left + ' left'));
+      var chip = el('span', 'chip' + (x.status === 'done' ? ' ok' : x.status === 'pending' ? ' wait' : locked ? ' lock' : ''),
+        x.status === 'done' ? 'Done' : x.status === 'pending' ? 'Pending' : locked ? 'Not yet' : (st.review ? x.left + ' to check' : x.left + ' left'));
       a.appendChild(chip); host.appendChild(a);
       if (x.status === 'done') doneSteps++;
-      if (!first && (x.status === 'todo' || x.status === 'pending')) first = { href: a.href || null, title: st.title, i: i + 1 };
+      if (!first && x.status === 'todo') first = { href: a.href, title: st.title, i: i + 1 };
+      if (!pend && x.status === 'pending') pend = { href: a.href, title: st.title, i: i + 1 };
     });
     document.getElementById('progress').textContent = doneSteps + ' of ' + steps.length + ' done';
     document.getElementById('bar').hidden = false; document.getElementById('fill').style.width = Math.round(100 * doneSteps / Math.max(steps.length, 1)) + '%';
-    var cont = document.getElementById('cont');
-    if (first && first.href){ var b = el('a', 'btn brass', 'Continue: ' + first.i + '. ' + first.title); b.href = first.href; cont.appendChild(b); }
+    var cont = document.getElementById('cont'); first = first || pend;
+    if (first){ var b = el('a', 'btn brass', 'Continue: ' + first.i + '. ' + first.title); b.href = first.href; cont.appendChild(b); }
     else if (doneSteps === steps.length) cont.appendChild(el('p', 'sub', 'Everything is done. We take it from here.'));
+    else cont.appendChild(el('p', 'sub', 'Nothing to do right now. The next step opens when we are done on our side; we email you.'));
     document.getElementById('costWrap').hidden = false;
     (acct.template.costs || []).forEach(function(c){
       var tr = el('tr'), td = el('td', '', c[0] + ' '); td.appendChild(el('span', '', '· ' + c[1]));

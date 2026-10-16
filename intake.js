@@ -1,6 +1,9 @@
-/* The intake renderer: one section = named boxes marked Required or Optional, saving as he types.
-   Shared by the step page. Needs PM (pm.js) and an account from get_account. */
+/* The intake renderer: one section = named boxes marked Required or Optional, saving as he types;
+   the two check lists (the menu draft, the app) as cards with Right / a note; and the state of every step.
+   Shared by the step page and the profile. Needs PM (pm.js) and an account from get_account. */
 window.Intake = (function(){
+  var STAGES = ['setup', 'drafting', 'menu_check', 'building', 'app_check', 'approved', 'live'];
+  function stageRank(s){ var i = STAGES.indexOf(s); return i < 0 ? 0 : i; }
   function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function val(state, s, f){ if (f.sameAs && state[s.id + '.' + f.id + '.same'] === '1') return (state[s.id + '.' + f.sameAs] || '').trim(); return (state[s.id + '.' + f.id] || '').trim(); }
   function filled(state, s, f){ var v = val(state, s, f); return f.want ? v === f.want : v !== ''; }
@@ -106,23 +109,112 @@ window.Intake = (function(){
     paint();
   }
 
-  // One step's state from its sections. Returns {status:'done'|'pending'|'locked'|'todo', left:n, done:k, total:m}
+  // A check list (step.review = 'menu' or 'app'): cards by section, Right or a note, our reply under it.
+  function renderReview(host, acct, step, savingEl, onChange){
+    var kind = step.review, items = (acct.review || []).filter(function(i){ return i.kind === kind; }), state = acct.answers || {}, timers = {};
+    var okWord = kind === 'menu' ? 'Right' : 'Looks right', cards = {};
+    function count(){ var ok = items.filter(function(i){ return i.ok; }).length; return { ok: ok, n: items.length }; }
+    function busy(t){ savingEl.className = 'saving'; savingEl.textContent = t; }
+    function saved(){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); if (onChange) onChange(count()); }
+    function failed(err){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; }
+    function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', !!it.ok); c.okb.setAttribute('aria-pressed', String(!!it.ok)); }
+    function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; paintItem(it); } }); }); }
+    if (kind === 'app'){
+      var where = el('section', 'sec where'); where.appendChild(el('h2', '', 'Where to open it'));
+      var any = false;
+      [['testflight', 'On your iPhone'], ['android', 'On Android'], ['web', 'In your browser']].forEach(function(p){
+        var v = (state['app.' + p[0]] || '').trim(); if (!v) return; any = true;
+        var row = el('p', 'd'); row.appendChild(el('b', '', p[1] + ': '));
+        if (/^https?:\/\//.test(v)){ var a = el('a', '', v.replace(/^https?:\/\//, '')); a.href = v; a.target = '_blank'; a.rel = 'noopener'; row.appendChild(a); } else row.appendChild(document.createTextNode(v));
+        where.appendChild(row);
+      });
+      if (!any) where.appendChild(el('p', 'd', 'The links come with the email that says your test app is ready.'));
+      where.appendChild(el('p', 'note', 'Go through it in this order, as a customer would. Anything off: write it under the screen. We fix it and reply here; then reopen the app and check again.'));
+      host.appendChild(where);
+    }
+    var sections = []; items.forEach(function(i){ var s = i.section || ''; if (sections.indexOf(s) < 0) sections.push(s); });
+    sections.forEach(function(sname){
+      var mine = items.filter(function(i){ return (i.section || '') === sname; });
+      var sec = el('section', 'sec list');
+      var head = el('div', 'sec-head'); head.appendChild(el('h2', '', sname || (kind === 'menu' ? 'Your menu' : 'Your app')));
+      if (mine.length > 1){
+        var all = el('button', 'okb all', kind === 'menu' ? 'All of these are right' : 'All of these look right'); all.type = 'button';
+        all.addEventListener('click', function(){ busy('Saving…'); PM.rpc('save_review_all', { p_kind: kind, p_section: sname || null }).then(function(list){ applyList(list); saved(); }).catch(failed); });
+        head.appendChild(all);
+      }
+      sec.appendChild(head);
+      mine.forEach(function(it){
+        var card = el('div', 'item' + (it.ok ? ' ok' : '')); card.appendChild(el('b', '', it.name));
+        String(it.detail || '').split('\n').forEach(function(line){
+          if (!line.trim()) return; var p = el('p', 'd'), m = line.match(/^([A-Z][^:]{1,28}):\s*(.*)$/);
+          if (m){ p.appendChild(el('span', 'k', m[1] + ': ')); p.appendChild(document.createTextNode(m[2])); } else p.textContent = line;
+          card.appendChild(p);
+        });
+        if (it.reply){ var rp = el('div', 'reply'); rp.appendChild(el('b', '', 'Us: ')); rp.appendChild(document.createTextNode(it.reply)); card.appendChild(rp); }
+        var row = el('div', 'row'); var okb = el('button', 'okb', okWord); okb.type = 'button'; okb.setAttribute('aria-pressed', String(!!it.ok)); row.appendChild(okb); card.appendChild(row);
+        var ta = el('textarea'); ta.placeholder = kind === 'menu' ? 'Anything wrong or missing here? Write it.' : 'Anything off on this screen? Write it.'; ta.value = it.note || ''; card.appendChild(ta);
+        cards[it.item_id] = { card: card, okb: okb };
+        function save(){ clearTimeout(timers[it.item_id]); timers[it.item_id] = setTimeout(function(){
+          busy('Saving…'); PM.rpc('save_review', { p_item: it.item_id, p_ok: it.ok, p_note: ta.value }).then(saved).catch(failed);
+        }, 500); }
+        okb.addEventListener('click', function(){ it.ok = !it.ok; paintItem(it); save(); });
+        ta.addEventListener('input', function(){ it.note = ta.value; save(); });
+        sec.appendChild(card);
+      });
+      host.appendChild(sec);
+    });
+    if (kind === 'menu'){
+      var miss = el('section', 'sec'); miss.appendChild(el('h2', '', 'Something missing?'));
+      miss.appendChild(el('p', 'hint', 'An item, a size, a sauce, a price we did not catch. Write it here and we add it to the draft.'));
+      var mta = el('textarea'); mta.className = 'missing'; mta.placeholder = 'For example: a kids meal, $6, with a drink'; mta.value = state['menu.missing'] || '';
+      var mt;
+      mta.addEventListener('input', function(){ state['menu.missing'] = mta.value; clearTimeout(mt); mt = setTimeout(function(){ busy('Saving…'); PM.rpc('save_answer', { p_key: 'menu.missing', p_value: mta.value }).then(saved).catch(failed); }, 600); });
+      miss.appendChild(mta); host.appendChild(miss);
+    }
+    return count();
+  }
+
+  // One step's state. {status:'done'|'pending'|'locked'|'todo', left, done, total, why}
   function stepState(acct, step){
-    var state = acct.answers || {}, tasks = acct.tasks || {}, bySec = {};
+    var state = acct.answers || {}, tasks = acct.tasks || {}, bySec = {}, steps = acct.template.steps || [];
     (acct.template.sections || []).forEach(function(s){ bySec[s.id] = s; });
+    function lockedBy(){
+      if (step.after && stageRank(acct.stage) < stageRank(step.after)) return step.after;
+      if (step.needs && step.needs.some(function(id){ var s = steps.filter(function(x){ return x.id === id; })[0]; return s && stepState(acct, s).status !== 'done'; })) return 'needs';
+      return null;
+    }
+    var why = lockedBy();
     if (step.review){
-      var items = acct.review || [];
-      if (acct.stage === 'setup' || acct.stage === 'building' || !items.length) return { status: 'locked', left: 0, done: 0, total: 0 };
+      var items = (acct.review || []).filter(function(i){ return i.kind === step.review; });
+      if (why || !items.length) return { status: 'locked', left: 0, done: 0, total: 0, why: why || step.after };
       var okd = items.filter(function(i){ return i.ok; }).length;
       return { status: okd === items.length ? 'done' : 'todo', left: items.length - okd, done: okd, total: items.length };
     }
     var done = 0, total = 0, left = 0, pend = false;
-    step.sections.forEach(function(id){
+    (step.sections || []).forEach(function(id){
       var s = bySec[id]; if (!s) return; var st = statusOf(tasks, state, s);
       if (st === 'optional' || st === 'added') return;
       total++; if (st === 'done') done++; else if (st === 'pending') pend = true; else left += parseInt(st, 10) || 0;
     });
-    return { status: done === total ? 'done' : (pend && left === 0 ? 'pending' : 'todo'), left: left, done: done, total: total };
+    var status = done === total ? 'done' : (pend && left === 0 ? 'pending' : 'todo');
+    if (why && status !== 'done') return { status: 'locked', left: left, done: done, total: total, why: why };
+    return { status: status, left: left, done: done, total: total };
   }
-  return { render: render, stepState: stepState, el: el };
+  function lockText(why){
+    return why === 'menu_check' ? 'Opens when your menu draft is ready. We email you.'
+      : why === 'app_check' ? 'Opens when your test app is on your phone. We email you.'
+      : why === 'approved' ? 'Opens once you approve your app in step 4.'
+      : why === 'needs' ? 'Opens when the steps before it are done.' : 'Not yet.';
+  }
+  function stageLine(acct){
+    var s = acct.stage;
+    return s === 'setup' ? 'Steps 1 and 2 are yours. Step 1 starts our drafting.'
+      : s === 'drafting' ? 'We are drafting your menu from your files. Step 3 opens when it is ready; we email you.'
+      : s === 'menu_check' ? 'Your menu draft is ready: check it in step 3.'
+      : s === 'building' ? 'We are building your test app. Step 4 opens when it is on your phone; we email you.'
+      : s === 'app_check' ? 'Your test app is ready: try it in step 4.'
+      : s === 'approved' ? 'Approved. Payments and your own accounts next.'
+      : s === 'live' ? 'Live.' : '';
+  }
+  return { render: render, renderReview: renderReview, stepState: stepState, lockText: lockText, stageLine: stageLine, stageRank: stageRank, el: el };
 })();

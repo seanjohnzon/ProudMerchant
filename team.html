@@ -8,28 +8,35 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap">
 <link rel="stylesheet" href="pm.css">
 <style>
-  /* Ours: every business, where it stands, and the jobs its finished sections started. */
+  /* Ours: every business, where it stands, the jobs waiting on us, and the three things we do by hand:
+     post the menu draft, answer a note, mark the test app built. */
   body{font-size:16px}
   .biz{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:8px;margin-bottom:12px}
   .biz-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
   .biz h2{font-size:21px;margin:0}
-  .meta{color:var(--ink2);font-size:14.5px}
+  .meta{color:var(--ink2);font-size:14.5px;margin:0}
   .prog{height:8px;background:var(--tint);border-radius:999px;overflow:hidden}
   .prog i{display:block;height:100%;background:var(--done)}
   .jobs{display:grid;gap:6px;margin-top:4px}
   .job{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:15px;border-top:1px solid var(--line);padding-top:6px}
   .job small{color:var(--ink3);display:block;font-size:13px}
-  .job button{font:inherit;font-size:14px;background:var(--ink);color:var(--paper);border:0;border-radius:6px;padding:6px 11px;cursor:pointer}
+  .job button,.panel button,.note button{font:inherit;font-size:14px;background:var(--ink);color:var(--paper);border:0;border-radius:6px;padding:6px 11px;cursor:pointer}
+  .job button:disabled,.panel button:disabled{opacity:.5}
   .none{color:var(--ink3);font-size:14.5px}
   .events{font-size:14.5px;color:var(--ink2);display:grid;gap:4px}
   .events b{color:var(--ink)}
   .linkish{background:none;border:0;padding:0;font:inherit;font-size:15.5px;color:var(--ink2);text-decoration:underline;cursor:pointer}
   .files{display:flex;gap:8px;flex-wrap:wrap;font-size:14px}
   .files a{color:var(--ink);background:var(--tint);border-radius:6px;padding:3px 8px;text-decoration:none}
-  .built{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:8px}
-  .built textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px;width:100%;min-height:90px}
-  .built button{font:inherit;font-size:14px;background:var(--done);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer;justify-self:start}
+  .panel{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+  .panel textarea,.panel input,.note textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:8px;width:100%}
+  .panel textarea{min-height:90px}
+  .panel .go{background:var(--done);justify-self:start}
+  .panel h4{margin:0;font-size:15px}
   .stage{font-weight:600;color:var(--brass)}
+  .note{display:grid;gap:6px;border-top:1px solid var(--line);padding-top:8px;font-size:15px}
+  .note .q{background:var(--tint);border-radius:6px;padding:6px 10px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   h1{font-size:34px;margin:10px 0 4px}
 </style>
 </head>
@@ -42,6 +49,7 @@
   <h1>Team</h1>
   <p class="meta" id="summary"></p>
   <p class="msg err" id="err"></p>
+  <p class="msg ok" id="okmsg"></p>
   <div id="list"></div>
   <h2 style="font-size:22px;margin-top:28px">What happened lately</h2>
   <div class="events" id="events"></div>
@@ -51,7 +59,9 @@
 <script src="pm.js"></script>
 <script>
 (function(){
-  var err = document.getElementById('err');
+  var err = document.getElementById('err'), okmsg = document.getElementById('okmsg');
+  var SITE = location.href.replace(/[^/]*$/, '');
+  var STAGE = { setup: 'Filling in steps 1 and 2', drafting: 'Waiting on us: draft the menu', menu_check: 'He is checking the menu draft (step 3)', building: 'Waiting on us: build the test app', app_check: 'He is trying the app (step 4)', approved: 'Approved. Payments and accounts', live: 'Live' };
   PM.session().then(function(s){
     if (!s){ location.replace('login.html'); return; }
     document.getElementById('who').textContent = s.user.email;
@@ -61,6 +71,7 @@
   }).catch(function(e){ err.textContent = e.message; });
 
   function load(){
+    err.textContent = ''; okmsg.textContent = '';
     return PM.rpc('team_overview').then(function(o){
       if (!o){ err.textContent = 'This page is for the team. Your login is not on the list.'; return; }
       var list = document.getElementById('list'); list.innerHTML = '';
@@ -71,28 +82,59 @@
       o.businesses.forEach(function(b){
         var card = el('div', 'biz');
         var head = el('div', 'biz-head'); head.appendChild(el('h2', '', b.name));
-        head.appendChild(el('span', 'meta', b.done + ' of ' + b.total + ' done' + (b.pending ? ', ' + b.pending + ' pending' : ''))); card.appendChild(head);
+        head.appendChild(el('span', 'meta', b.done + ' of ' + b.total + ' sections done' + (b.pending ? ', ' + b.pending + ' pending' : ''))); card.appendChild(head);
         var bar = el('div', 'prog'); var fill = el('i'); fill.style.width = (b.total ? Math.round(100 * b.done / b.total) : 0) + '%'; bar.appendChild(fill); card.appendChild(bar);
         card.appendChild(el('p', 'meta', [b.kind, b.contact, b.phone, b.email, 'started ' + when(b.started), b.last_answer ? 'last answer ' + when(b.last_answer) : ''].filter(Boolean).join(' · ')));
-        var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', { setup: 'Filling in', building: 'Waiting on us to build', review: 'He is checking the menu', approved: 'Menu approved', live: 'Live' }[b.stage] || b.stage)); card.appendChild(stage);
+        var stage = el('p', 'meta'); stage.appendChild(el('span', 'stage', STAGE[b.stage] || b.stage));
+        stage.appendChild(document.createTextNode(' · menu draft ' + b.menu.ok + '/' + b.menu.n + ' right · app ' + b.app.ok + '/' + b.app.n + ' look right'));
+        card.appendChild(stage);
         var files = el('div', 'files'); card.appendChild(files);
         PM.listFiles(b.id).then(function(folders){ (folders || []).forEach(function(fo){ PM.listFiles(b.id + '/' + fo.name).then(function(fs){ (fs || []).forEach(function(f){
           var a = el('a', '', fo.name.replace('.', ' · ') + ': ' + f.name.replace(/^\d+-/, '')); a.target = '_blank'; a.rel = 'noopener'; a.href = '#';
           a.addEventListener('click', function(e){ e.preventDefault(); PM.fileUrl(b.id + '/' + fo.name + '/' + f.name).then(function(u){ window.open(u, '_blank'); }); });
           files.appendChild(a); }); }); }); }).catch(function(){});
-        if (b.stage === 'building' || b.stage === 'setup'){
-          var bx = el('div', 'built'); bx.appendChild(el('span', 'meta', 'When his app is built: paste the menu, one item per line as "name | detail", then mark it built. He gets step 3.'));
-          var ta = el('textarea'); ta.placeholder = 'The OG | Ketchup, mustard, onion, pickles · $9'; bx.appendChild(ta);
-          var mb = el('button', '', 'Mark built'); mb.addEventListener('click', function(){
-            var items = ta.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean).map(function(l, n){ var p = l.split('|'); return { id: 'i' + (n + 1), name: p[0].trim(), detail: (p[1] || '').trim() }; });
-            if (!items.length){ err.textContent = 'Paste the menu first.'; return; }
-            mb.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: items }).then(load).catch(function(e){ mb.disabled = false; err.textContent = e.message; });
-          }); bx.appendChild(mb); card.appendChild(bx);
+
+        // Notes waiting for an answer.
+        (b.notes || []).forEach(function(n){
+          var box = el('div', 'note'); var q = el('div', 'q'); q.appendChild(el('b', '', (n.kind === 'menu' ? 'Menu draft · ' : 'App · ') + n.name + ': ')); q.appendChild(document.createTextNode(n.note)); box.appendChild(q);
+          var ta = el('textarea'); ta.placeholder = 'Our answer, shown under the item. For a menu note: fix the draft here too. For an app note: fix, push the update, then "Fixed, reopen the app."'; box.appendChild(ta);
+          var btn = el('button', '', 'Reply'); btn.addEventListener('click', function(){ if (!ta.value.trim()) return; btn.disabled = true; PM.rpc('team_reply', { p_business: b.id, p_item: n.item, p_reply: ta.value.trim() }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
+          box.appendChild(btn); card.appendChild(box);
+        });
+
+        // Post the draft (step 3 opens), or repost after a fix.
+        if (b.stage === 'setup' || b.stage === 'drafting' || b.stage === 'menu_check'){
+          var p1 = el('div', 'panel'); p1.appendChild(el('h4', '', b.menu.n ? 'Repost the menu draft (fixes)' : 'Post the menu draft'));
+          p1.appendChild(el('span', 'meta', 'Paste a JSON list [{"id","section","name","detail"}] (detail: one line per fact, "Comes with: …", "You choose: …"), or lines "Section | Name · $price | detail; more". Same ids update in place.'));
+          var ta1 = el('textarea'); ta1.placeholder = 'Smash Burgers | The OG · $9 | Comes with: sliced onion, pickles; You choose: patty: single, double +$2'; p1.appendChild(ta1);
+          var b1 = el('button', 'go', b.menu.n ? 'Repost' : 'Post the draft'); b1.addEventListener('click', function(){
+            var items = parseItems(ta1.value); if (!items.length){ err.textContent = 'Paste the draft first.'; return; }
+            b1.disabled = true; PM.rpc('team_post', { p_business: b.id, p_items: items }).then(function(){ okmsg.textContent = items.length + ' items posted. His step 3 is open.'; return load(); }).catch(function(e){ b1.disabled = false; err.textContent = e.message; });
+          }); p1.appendChild(b1); card.appendChild(p1);
         }
+
+        // Mark built (step 4 opens), or update the links.
+        if (b.menu.n){
+          var p2 = el('div', 'panel'); p2.appendChild(el('h4', '', b.app.n ? 'Update the test app links' : 'Mark the test app built'));
+          var tf = el('input'); tf.placeholder = 'iPhone: e.g. "B&P Test on TestFlight, invite sent to his email"'; tf.value = b.links.testflight || '';
+          var wb = el('input'); wb.placeholder = 'Browser link: https://…sit.proudmerchant.com'; wb.value = b.links.web || '';
+          var an = el('input'); an.placeholder = 'Android install link (or blank)'; an.value = b.links.android || '';
+          p2.appendChild(tf); p2.appendChild(wb); p2.appendChild(an);
+          var b2 = el('button', 'go', b.app.n ? 'Save links' : 'Mark built'); b2.addEventListener('click', function(){
+            b2.disabled = true; PM.rpc('team_built', { p_business: b.id, p_items: { links: { testflight: tf.value.trim(), web: wb.value.trim(), android: an.value.trim() } } }).then(function(){ okmsg.textContent = 'Built. His step 4 opens once his menu check is done.'; return load(); }).catch(function(e){ b2.disabled = false; err.textContent = e.message; });
+          }); p2.appendChild(b2); card.appendChild(p2);
+        }
+
+        // The email for where he is now, ready to paste.
+        var p3 = el('div', 'panel'); var r3 = el('div', 'row');
+        var b3 = el('button', '', 'Copy the email for this stage'); var pre = el('textarea'); pre.hidden = true; pre.value = emailFor(b);
+        b3.addEventListener('click', function(){ (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(pre.value) : Promise.reject()).then(function(){ okmsg.textContent = 'Copied.'; }).catch(function(){ pre.hidden = false; pre.select(); }); });
+        r3.appendChild(b3); r3.appendChild(el('span', 'meta', 'to ' + (b.email || '—'))); p3.appendChild(r3); p3.appendChild(pre); card.appendChild(p3);
+
         var jobs = el('div', 'jobs');
         if (!b.jobs.length) jobs.appendChild(el('span', 'none', 'Nothing waiting on us.'));
         b.jobs.forEach(function(j){
-          var row = el('div', 'job'); var t = el('span', '', j.kind); t.appendChild(el('small', '', 'from "' + j.section + '", ' + when(j.at))); row.appendChild(t);
+          var row = el('div', 'job'); var t = el('span', '', j.kind); t.appendChild(el('small', '', 'from ' + jobFrom(j.section) + ', ' + when(j.at))); row.appendChild(t);
           var btn = el('button', '', 'Done'); btn.addEventListener('click', function(){ btn.disabled = true; PM.rpc('job_done', { p_id: j.id }).then(load).catch(function(e){ btn.disabled = false; err.textContent = e.message; }); });
           row.appendChild(btn); jobs.appendChild(row);
         });
@@ -104,14 +146,34 @@
       });
     });
   }
+  function parseItems(text){
+    text = text.trim(); if (!text) return [];
+    if (text[0] === '['){ try { return JSON.parse(text).filter(function(i){ return i && i.id && i.name; }); } catch(e){ err.textContent = 'That JSON does not parse: ' + e.message; return []; } }
+    return text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean).map(function(l){
+      var p = l.split('|').map(function(x){ return x.trim(); }); var name = p[1] || p[0];
+      return { id: name.replace(/\s*·.*$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''), section: p.length > 1 ? p[0] : '', name: name, detail: (p[2] || '').split(';').map(function(x){ return x.trim(); }).filter(Boolean).join('\n') };
+    });
+  }
+  function emailFor(b){
+    var first = (b.contact || '').split(' ')[0] || 'there', login = SITE + 'login.html';
+    if (b.stage === 'menu_check') return 'Hi ' + first + ',\n\nYour menu draft is ready to check: ' + login + ' (your email and password), then step 3. Each item: Right, or write what is wrong under it. About ten minutes. Anything missing goes in the box at the bottom.\n\nWe build the test app from what you approve there.\n\nCihan, Proud Merchant';
+    if (b.stage === 'app_check') return 'Hi ' + first + ',\n\nYour test app is ready.' + (b.links.testflight ? '\n\niPhone: ' + b.links.testflight : '') + (b.links.web ? '\nBrowser: ' + b.links.web : '') + (b.links.android ? '\nAndroid: ' + b.links.android : '') + '\n\nThen ' + login + ', step 4: go through it as a customer would, screen by screen, and tick Looks right or write what is off. We fix and reply there; reopen the app and check again.\n\nCihan, Proud Merchant';
+    if (b.stage === 'approved') return 'Hi ' + first + ',\n\nYour app is approved. Next on your list: ' + login + ' — step 5 (your Square or Stripe) and step 6 (your web address, D-U-N-S, Apple and Google). Those last ones cost a little and take days on their side, so the sooner they start the better.\n\nCihan, Proud Merchant';
+    return 'Hi ' + first + ',\n\nYour setup list is at ' + login + ' (your email and password). Steps 1 and 2 are yours; we draft your menu as soon as step 1 is in.\n\nCihan, Proud Merchant';
+  }
+  function jobFrom(sec){ return sec === 's1' ? 'step 1' : sec === 's3' ? 'the approved draft' : sec === 'menu_note' ? 'a note on the menu draft' : sec === 'app_note' ? 'a note on the app' : '"' + sec + '"'; }
   function plain(e){
     if (e.type === 'started') return 'started an account';
     if (e.type === 'task_done') return 'finished "' + (e.detail.section || '') + '" → ' + (e.detail.job || '');
     if (e.type === 'account_made') return 'account made by us';
     if (e.type === 'step_done') return 'finished step "' + (e.detail.step || '') + '" → ' + (e.detail.job || '');
-    if (e.type === 'built') return 'we marked it built (' + (e.detail.items || 0) + ' items to check)';
-    if (e.type === 'review_note') return 'note on "' + (e.detail.item || '') + '": ' + (e.detail.note || '');
-    if (e.type === 'approved') return 'approved the menu';
+    if (e.type === 'draft_posted') return 'we posted the menu draft (' + (e.detail.items || 0) + ' items)';
+    if (e.type === 'menu_approved') return 'approved the menu draft';
+    if (e.type === 'build_queued') return 'build queued for us';
+    if (e.type === 'built') return 'we marked the test app built';
+    if (e.type === 'review_note') return 'note on ' + (e.detail.kind === 'app' ? 'the app, ' : 'the draft, ') + '"' + (e.detail.item || '') + '": ' + (e.detail.note || '');
+    if (e.type === 'replied') return 'we replied on "' + (e.detail.item || '') + '": ' + (e.detail.reply || '');
+    if (e.type === 'approved') return 'approved the app';
     return e.type;
   }
   function when(iso){ var d = new Date(iso); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
