@@ -121,14 +121,25 @@ window.Intake = (function(){
   function renderReview(host, acct, step, savingEl, onChange){
     var kind = step.review, items = listItems(acct, step), state = acct.answers || {}, timers = {}, cards = {};
     function passed(i){ return i.result === 'pass'; }
-    function count(){ var ok = items.filter(passed).length; return { ok: ok, n: items.length }; }
+    function count(list){ list = list || items; var ok = list.filter(passed).length, bad = list.filter(function(i){ return i.result === 'fail'; }).length; return { ok: ok, n: list.length, fail: bad }; }
     function busy(t){ savingEl.className = 'saving'; savingEl.textContent = t; }
-    function saved(){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); if (onChange) onChange(count()); }
+    function saved(){ savingEl.textContent = 'Saved.'; setTimeout(function(){ if (savingEl.textContent === 'Saved.') savingEl.textContent = ''; }, 1500); paintCats(); if (onChange) onChange(count()); }
     function failed(err){ savingEl.className = 'saving err'; savingEl.textContent = 'Not saved: ' + err.message; }
     function paintItem(it){ var c = cards[it.item_id]; c.card.classList.toggle('ok', passed(it)); c.card.classList.toggle('fail', it.result === 'fail');
       c.pass.setAttribute('aria-pressed', String(it.result === 'pass')); c.fail.setAttribute('aria-pressed', String(it.result === 'fail')); }
-    function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); }
-    function label(i){ return (kind === 'app' && i.kind === 'menu' ? 'Your menu · ' : '') + (i.section || ''); }
+    function applyList(list){ (list || []).forEach(function(r){ items.forEach(function(it){ if (it.item_id === r.item_id){ it.ok = r.ok; it.note = r.note; if (r.result !== undefined) it.result = r.result; paintItem(it); } }); }); paintCats(); }
+    // Categories: the menu is one of them; every other section is its own.
+    function catOf(i){ return kind === 'app' && i.kind === 'menu' ? 'Menu' : (i.section || 'Checks'); }
+    var cats = []; items.forEach(function(i){ var c = catOf(i); if (cats.indexOf(c) < 0) cats.push(c); });
+    var catEls = {};
+    function paintCats(){
+      cats.forEach(function(c){
+        var mine = items.filter(function(i){ return catOf(i) === c; }), k = count(mine), e = catEls[c];
+        e.chip.textContent = k.ok === k.n ? 'Done' : k.fail ? k.ok + ' of ' + k.n + ' pass, ' + k.fail + ' fail' : k.ok ? k.ok + ' of ' + k.n + ' pass' : k.n + ' to check';
+        e.chip.className = 'chip' + (k.ok === k.n ? ' ok' : k.fail ? ' bad' : '');
+        e.box.classList.toggle('ok', k.ok === k.n); e.box.classList.toggle('fail', !!k.fail);
+      });
+    }
 
     var where = el('section', 'sec where'); where.appendChild(el('h2', '', kind === 'uat' ? 'The real thing' : 'Where to open it'));
     var any = false, pre = kind === 'uat' ? 'uat.' : 'app.';
@@ -139,22 +150,30 @@ window.Intake = (function(){
       where.appendChild(row);
     });
     if (!any) where.appendChild(el('p', 'd', kind === 'uat' ? 'The links come with the email that says the final test is on.' : 'The links come with the email that says your app is ready.'));
-    where.appendChild(el('p', 'note', kind === 'uat' ? 'Real card, real orders (refund them after). Each check: Pass, or Fail with what happened. Our tester does the same list; both have to pass before launch.'
-      : 'Test app, test orders, nothing real. Your menu first: open each item like a customer and compare it with the words under it. Then the screens. Account → Test controls sets the stamp card and resets the free drink. Each one: Pass, or Fail with what you saw. We fix it and reply here; then reopen the app and check again.'));
+    where.appendChild(el('p', 'note', kind === 'uat' ? 'Real card, real orders (refund them after). Open a part, go through it, Pass or Fail each line. Our tester does the same list; both have to pass before launch.'
+      : 'Test app, test orders, nothing real. Open a part, go through it on your phone, Pass or Fail each line, notes at the bottom of the part. Account → Test controls sets the stamp card and resets the free drink.'));
     host.appendChild(where);
 
-    var sections = []; items.forEach(function(i){ var l = label(i); if (sections.indexOf(l) < 0) sections.push(l); });
-    sections.forEach(function(sname){
-      var mine = items.filter(function(i){ return label(i) === sname; }), first = mine[0];
-      var sec = el('section', 'sec list');
-      var head = el('div', 'sec-head'); head.appendChild(el('h2', '', sname || 'Your app'));
+    var firstOpen = null;
+    cats.forEach(function(c){
+      var mine = items.filter(function(i){ return catOf(i) === c; });
+      var box = el('details', 'cat'); var sum = el('summary'); sum.appendChild(el('span', 'name', c)); var chip = el('span', 'chip'); sum.appendChild(chip); box.appendChild(sum);
+      var body = el('div', 'cat-body'); box.appendChild(body);
+      catEls[c] = { box: box, chip: chip };
+      if (firstOpen === null && count(mine).ok < mine.length){ firstOpen = c; box.open = true; }
       if (mine.length > 1 && kind !== 'uat'){
         var all = el('button', 'okb all', 'All of these pass'); all.type = 'button';
-        all.addEventListener('click', function(){ busy('Saving…'); PM.rpc('save_review_all', { p_kind: first.kind, p_section: first.section || null }).then(function(list){ applyList(list); saved(); }).catch(failed); });
-        head.appendChild(all);
+        all.addEventListener('click', function(){
+          busy('Saving…');
+          var groups = {}; mine.forEach(function(i){ var g = i.kind + '|' + (i.section || ''); groups[g] = groups[g] || i; });
+          Object.keys(groups).reduce(function(pr, g){ return pr.then(function(){ var i = groups[g]; return PM.rpc('save_review_all', { p_kind: i.kind, p_section: i.section || null }).then(applyList); }); }, Promise.resolve()).then(saved).catch(failed);
+        });
+        body.appendChild(all);
       }
-      sec.appendChild(head);
+      // Inside Menu, the menu's own sections are sub-headings.
+      var lastSub = null;
       mine.forEach(function(it){
+        if (c === 'Menu' && it.section !== lastSub){ body.appendChild(el('h3', 'sub', it.section)); lastSub = it.section; }
         var card = el('div', 'item' + (passed(it) ? ' ok' : it.result === 'fail' ? ' fail' : '')); card.appendChild(el('b', '', it.name));
         String(it.detail || '').split('\n').forEach(function(line){
           if (!line.trim()) return; var p = el('p', 'd'), m = line.match(/^([A-Z][^:]{1,28}):\s*(.*)$/);
@@ -172,23 +191,26 @@ window.Intake = (function(){
         pb.addEventListener('click', function(){ it.result = it.result === 'pass' ? '' : 'pass'; paintItem(it); save(); });
         fb.addEventListener('click', function(){ it.result = it.result === 'fail' ? '' : 'fail'; paintItem(it); save(); if (it.result === 'fail') ta.focus(); });
         paintItem(it);
-        sec.appendChild(card);
+        body.appendChild(card);
       });
       // Notes on this part.
-      var sl = slug(sname), nk = kind + '.notes.' + sl, rk = kind + '.notes_reply.' + sl;
-      if (state[rk]){ var nr = el('div', 'reply'); nr.appendChild(el('b', '', 'Us: ')); nr.appendChild(document.createTextNode(state[rk])); sec.appendChild(nr); }
-      var nta = el('textarea'); nta.className = 'missing part'; nta.placeholder = 'Notes on ' + (sname ? sname.replace('Your menu · ', '').toLowerCase() : 'this part') + ': anything to add, remove or change.'; nta.value = state[nk] || '';
+      var sl = slug(c), nk = kind + '.notes.' + sl, rk = kind + '.notes_reply.' + sl;
+      body.appendChild(el('h3', 'sub', 'Notes on ' + c.toLowerCase()));
+      if (state[rk]){ var nr = el('div', 'reply'); nr.appendChild(el('b', '', 'Us: ')); nr.appendChild(document.createTextNode(state[rk])); body.appendChild(nr); }
+      var nta = el('textarea'); nta.className = 'missing part'; nta.placeholder = 'Anything to add, remove or change in ' + c.toLowerCase() + '. Paste from your own notes if you have them.'; nta.value = state[nk] || '';
       var nt; nta.addEventListener('input', function(){ state[nk] = nta.value; clearTimeout(nt); nt = setTimeout(function(){ busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_section: sl, p_text: nta.value }).then(saved).catch(failed); }, 700); });
-      sec.appendChild(nta);
-      host.appendChild(sec);
+      body.appendChild(nta);
+      host.appendChild(box);
     });
+    paintCats();
     // The box at the end.
-    var notes = el('section', 'sec'); notes.appendChild(el('h2', '', 'Anything else'));
-    notes.appendChild(el('p', 'hint', 'Whatever the list above does not cover. Paste your own notes here as they are; we sort them and reply here.'));
-    if (state[kind + '.notes_reply']){ var nr2 = el('div', 'reply'); nr2.appendChild(el('b', '', 'Us: ')); nr2.appendChild(document.createTextNode(state[kind + '.notes_reply'])); notes.appendChild(nr2); }
+    var notes = el('details', 'cat open-note'); notes.open = true; var ns = el('summary'); ns.appendChild(el('span', 'name', 'Anything else')); notes.appendChild(ns);
+    var nb = el('div', 'cat-body'); notes.appendChild(nb);
+    nb.appendChild(el('p', 'hint', 'Whatever the parts above do not cover. Paste your own notes here as they are; we sort them and reply here.'));
+    if (state[kind + '.notes_reply']){ var nr2 = el('div', 'reply'); nr2.appendChild(el('b', '', 'Us: ')); nr2.appendChild(document.createTextNode(state[kind + '.notes_reply'])); nb.appendChild(nr2); }
     var eta = el('textarea'); eta.className = 'missing notes'; eta.placeholder = 'For example: the order screen should show the pickup time; remove the TikTok button for now; add a kids meal, $6, with a drink'; eta.value = state[kind + '.notes'] || '';
     var et; eta.addEventListener('input', function(){ state[kind + '.notes'] = eta.value; clearTimeout(et); et = setTimeout(function(){ busy('Saving…'); PM.rpc('save_notes', { p_kind: kind, p_section: '', p_text: eta.value }).then(saved).catch(failed); }, 700); });
-    notes.appendChild(eta); host.appendChild(notes);
+    nb.appendChild(eta); host.appendChild(notes);
     return count();
   }
 

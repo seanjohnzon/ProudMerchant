@@ -52,3 +52,17 @@
 .item .tester{color:var(--ink);background:var(--tint);border-radius:6px;padding:6px 10px}
 .missing.notes{min-height:120px}
 .missing.part{min-height:54px;font-size:14px;background:var(--card)}
+
+/* The check lists fold into parts: tap a part to open it. */
+.cat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--todo);border-radius:10px;padding:0}
+.cat.ok{border-left-color:var(--done)} .cat.fail{border-left-color:var(--todo)}
+.cat summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 15px;cursor:pointer;list-style:none;font-weight:800;font-size:19px;letter-spacing:-.01em}
+.cat summary::-webkit-details-marker{display:none}
+.cat summary::before{content:'▸';color:var(--ink3);font-size:15px;margin-right:2px}
+.cat[open] summary::before{content:'▾'}
+.cat summary .name{flex:1;min-width:0}
+.cat-body{display:grid;gap:10px;padding:0 15px 15px}
+.cat .sub{font-size:14px;font-weight:800;color:var(--ink2);margin:6px 0 0;letter-spacing:.02em;text-transform:uppercase}
+.chip.bad{background:var(--todo);color:#fff}
+.cat.open-note{border-left-color:var(--brass)}
+.cat .okb.all{justify-self:start}
