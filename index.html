@@ -152,10 +152,16 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)){ msg.className = 'msg err'; msg.textContent = 'That email does not look right.'; return; }
     if (pw.length < 8){ msg.className = 'msg err'; msg.textContent = 'The password needs at least 8 characters.'; return; }
     go.disabled = true; msg.textContent = 'Making your account…';
-    PM.signUp(mail, pw, who)
-      .then(function(){ return PM.rpc('start_business', { p_name: name, p_template: kind, p_contact: who, p_phone: tel }); })
-      .then(function(){ location.href = 'account.html'; })
-      .catch(function(err){ go.disabled = false; msg.className = 'msg err'; msg.textContent = /already/i.test(err.message) ? 'There is already an account for this email. Log in instead.' : err.message; });
+    var start = { p_name: name, p_template: kind, p_contact: who, p_phone: tel };
+    try { localStorage.setItem('pm-pending', JSON.stringify(start)); } catch(e){}
+    PM.session().then(function(s){ return s ? null : PM.signUp(mail, pw, who); })
+      .then(function(){ return PM.rpc('start_business', start); })
+      .then(function(){ try { localStorage.removeItem('pm-pending'); } catch(e){} location.href = 'account.html'; })
+      .catch(function(err){
+        go.disabled = false; msg.className = 'msg err';
+        if (/could not be opened/i.test(err.message)){ msg.className = 'msg ok'; msg.textContent = 'Your account is made. Confirm it from the email we just sent, then log in: your list opens by itself.'; return; }
+        msg.textContent = /already/i.test(err.message) ? 'There is already an account for this email. Log in instead.' : err.message;
+      });
   });
 })();
 </script>
